@@ -249,7 +249,7 @@ export default function Page() {
               <p className="text-sm text-zinc-600">Use code <span className="font-semibold">{REF_CODE}</span> at signup. Your wagers start counting this month.</p>
             </div>
             <a
-              href="https://YOUR-CASINO-REF-LINK"
+              href="https://rainbet.com/?r=squanto"
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center justify-center rounded-xl border px-4 py-2 text-sm font-medium shadow-sm hover:shadow transition"
