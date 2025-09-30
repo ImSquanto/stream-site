@@ -4,12 +4,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 
 type Entry = { uid?: string; username: string; totalWager: number; avatar?: string };
 
-// ---------- helpers ----------
 const REF_CODE = process.env.NEXT_PUBLIC_STREAM_REF_CODE || 'YOURCODE';
 const fmtUSD = (n: number) =>
   new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0);
 
-// Build YYYY-MM for a given date (ET)
+// Build YYYY-MM (ET)
 function monthKeyET(d = new Date()) {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/New_York',
@@ -28,12 +27,7 @@ function monthRangeFromKeyET(ym: string) {
   const next = new Date(Date.UTC(y, (m ?? 1), 1));
   const last = new Date(next.getTime() - 24 * 60 * 60 * 1000);
   const fmt = (x: Date) =>
-    new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'America/New_York',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(x); // YYYY-MM-DD
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(x);
   return { start_at: fmt(first), end_at: fmt(last) };
 }
 
@@ -68,16 +62,14 @@ const RankBadge = ({ rank }: { rank: number }) => {
   );
 };
 
-// ---------- page ----------
 export default function Page() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [q, setQ] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState(monthKeyET()); // default: current ET month
+  const [selectedMonth, setSelectedMonth] = useState(monthKeyET());
   const [updatedAt, setUpdatedAt] = useState<string>('');
 
-  // Last 6 months dropdown
   const monthOptions = useMemo(() => {
     const arr: { key: string; label: string }[] = [];
     const now = new Date();
@@ -90,7 +82,6 @@ export default function Page() {
     return arr;
   }, []);
 
-  // Fetch from your internal API (date-ranged)
   useEffect(() => {
     const { start_at, end_at } = monthRangeFromKeyET(selectedMonth);
     const url = `/api/leaderboard?start_at=${start_at}&end_at=${end_at}`;
@@ -117,13 +108,9 @@ export default function Page() {
         if (!cancel) setLoading(false);
       }
     })();
-
-    return () => {
-      cancel = true;
-    };
+    return () => { cancel = true; };
   }, [selectedMonth]);
 
-  // Filter + Top 10
   const filtered = useMemo(() => {
     const rows = (entries || []).slice().sort((a, b) => Number(b.totalWager || 0) - Number(a.totalWager || 0));
     const qq = q.trim().toLowerCase();
@@ -135,8 +122,8 @@ export default function Page() {
   }, [entries, q]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-white text-zinc-900">
-      {/* Header */}
+    <div className="min-h-screen bg-white text-zinc-900">
+      {/* Sticky Nav */}
       <header className="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-white/70 bg-white/60 border-b">
         <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -148,14 +135,13 @@ export default function Page() {
               </p>
             </div>
           </div>
-          <a
-            href="https://YOUR-CASINO-REF-LINK"
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-xl border px-3 py-2 text-sm font-medium shadow-sm hover:shadow transition"
-          >
-            Join the Race
-          </a>
+          <nav className="hidden md:flex items-center gap-4 text-sm">
+            <a href="#top10" className="hover:underline">Top 10</a>
+            <a href="#how" className="hover:underline">How to Join</a>
+            <a href="#prizes" className="hover:underline">Prizes & Payouts</a>
+            <a href="#fair" className="hover:underline">Fair Play</a>
+            <a href="#contact" className="hover:underline">Contact</a>
+          </nav>
         </div>
       </header>
 
@@ -186,7 +172,7 @@ export default function Page() {
               <span className="animate-pulse">Loading…</span>
             ) : (
               <span>
-                Last updated {updatedAt || '—'}
+                Last updated {updatedAt || '—'} ET
                 {err && <span className="ml-2 text-amber-600">• {err}</span>}
               </span>
             )}
@@ -194,8 +180,8 @@ export default function Page() {
         </div>
       </section>
 
-      {/* TOP 10 TABLE */}
-      <main className="mx-auto max-w-6xl px-4">
+      {/* TOP 10 */}
+      <main id="top10" className="mx-auto max-w-6xl px-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold tracking-tight">Top 10</h2>
           <span className="text-sm text-zinc-600">
@@ -228,7 +214,7 @@ export default function Page() {
                         )}
                         <div className="leading-tight">
                           <div className="font-semibold">{row.username || 'Player'}</div>
-                          <div className="text-xs text-zinc-500 truncate max-w-[220px]">{row.uid || 'id hidden'}</div>
+                          <div className="text-xs text-zinc-500 truncate max-w-[220px]">{row.uid || '—'}</div>
                         </div>
                       </div>
                     </td>
@@ -248,7 +234,7 @@ export default function Page() {
           </table>
         </div>
 
-        {/* Full list (optional reveal) */}
+        {/* Full list */}
         {filtered.all.length > 10 && (
           <details className="mt-4 rounded-2xl border p-4 open:shadow-sm">
             <summary className="cursor-pointer select-none font-medium">View full leaderboard ({filtered.all.length})</summary>
@@ -274,28 +260,100 @@ export default function Page() {
             </div>
           </details>
         )}
-
-        {/* CTA */}
-        <section id="join" className="mt-10 mb-20 rounded-2xl border p-6 shadow-sm bg-gradient-to-br from-zinc-50 to-white">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <div>
-              <h3 className="text-lg font-bold tracking-tight">Ready to climb the board?</h3>
-              <p className="text-sm text-zinc-600">
-                Use code <span className="font-semibold">{REF_CODE}</span> at signup. Your wagers start counting this month.
-              </p>
-            </div>
-            <a
-              href="https://YOUR-CASINO-REF-LINK"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center justify-center rounded-xl border px-4 py-2 text-sm font-medium shadow-sm hover:shadow transition"
-            >
-              Sign up & Play
-            </a>
-          </div>
-        </section>
       </main>
+
+      {/* How to Join */}
+      <section id="how" className="mx-auto max-w-6xl px-4 py-12">
+        <h2 className="text-lg font-semibold tracking-tight mb-4">How to Join</h2>
+        <ol className="grid gap-3 md:grid-cols-3">
+          <li className="rounded-xl border p-4 shadow-sm">
+            <div className="text-2xl mb-2">1️⃣</div>
+            <p>Create a casino account with code <span className="font-semibold">{REF_CODE}</span>.</p>
+          </li>
+          <li className="rounded-xl border p-4 shadow-sm">
+            <div className="text-2xl mb-2">2️⃣</div>
+            <p>Wager during the month (ET). Every $1 wagered counts toward the leaderboard.</p>
+          </li>
+          <li className="rounded-xl border p-4 shadow-sm">
+            <div className="text-2xl mb-2">3️⃣</div>
+            <p>Finish top 10 to win prizes. Winners announced within 48 hours after month end.</p>
+          </li>
+        </ol>
+        <a
+          href="https://YOUR-CASINO-REF-LINK"
+          className="mt-4 inline-flex rounded-xl border px-4 py-2 text-sm font-medium shadow-sm hover:shadow transition"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Join with {REF_CODE}
+        </a>
+      </section>
+
+      {/* Prizes & Payouts */}
+      <section id="prizes" className="mx-auto max-w-6xl px-4 py-12">
+        <h2 className="text-lg font-semibold tracking-tight mb-4">Prizes & Payouts</h2>
+        <div className="grid gap-3 md:grid-cols-4">
+          {[1,2,3,4,5,6,7,8,9,10].map(r => (
+            <div key={r} className="rounded-xl border p-4 shadow-sm flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <RankBadge rank={r} />
+                <span className="font-medium">Place {r}</span>
+              </div>
+              <span className="text-zinc-700">{prizeForRank(r)}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-sm text-zinc-600 mt-3">
+          Payouts are typically via site bonus or direct payment depending on availability. Identification may be required.
+        </p>
+      </section>
+
+      {/* Fair Play */}
+      <section id="fair" className="mx-auto max-w-6xl px-4 py-12">
+        <h2 className="text-lg font-semibold tracking-tight mb-4">Fair Play Rules</h2>
+        <ul className="space-y-2 text-sm text-zinc-700">
+          <li>• One account per person. Duplicate or shared accounts may be disqualified.</li>
+          <li>• Self-excluded, bonus-abuse, or fraudulent activity voids eligibility.</li>
+          <li>• Wagers must be placed within the calendar month (Eastern Time).</li>
+          <li>• We reserve the right to verify identity and adjust totals for errors or reversals.</li>
+          <li>• Final standings posted within 48 hours after month end.</li>
+        </ul>
+      </section>
+
+      {/* Footer */}
+      <footer id="contact" className="mt-16 border-t">
+        <div className="mx-auto max-w-6xl px-4 py-8 grid gap-6 md:grid-cols-4">
+          <div className="md:col-span-2">
+            <div className="text-lg font-bold">Squanto Gaming LLC</div>
+            <p className="text-sm text-zinc-600 mt-1">
+              Community tournaments & monthly wager races. Must be of legal age in your jurisdiction.
+            </p>
+            <p className="text-xs text-zinc-500 mt-2">
+              Gamble responsibly. If you or someone you know has a gambling problem and wants help, call the National Problem Gambling Helpline at 1-800-522-4700 or visit <a className="underline" href="https://www.ncpgambling.org" target="_blank" rel="noreferrer">ncpgambling.org</a>.
+            </p>
+          </div>
+          <div>
+            <div className="font-semibold mb-2">Links</div>
+            <ul className="space-y-1 text-sm">
+              <li><a className="hover:underline" href="/terms">Terms</a></li>
+              <li><a className="hover:underline" href="/privacy">Privacy</a></li>
+              <li><a className="hover:underline" href="/responsible-gaming">Responsible Gaming</a></li>
+              <li><a className="hover:underline" href="mailto:contact@squantogaming.com">Contact</a></li>
+            </ul>
+          </div>
+          <div>
+            <div className="font-semibold mb-2">Social</div>
+            <ul className="space-y-1 text-sm">
+              <li><a className="hover:underline" href="https://discord.gg/YOURCODE" target="_blank" rel="noreferrer">Discord</a></li>
+              <li><a className="hover:underline" href="https://twitch.tv/YOURHANDLE" target="_blank" rel="noreferrer">Twitch</a></li>
+              <li><a className="hover:underline" href="https://x.com/YOURHANDLE" target="_blank" rel="noreferrer">X / Twitter</a></li>
+            </ul>
+          </div>
+        </div>
+        <div className="border-t py-4 text-center text-xs text-zinc-500">
+          © {new Date().getFullYear()} Squanto Gaming LLC. All rights reserved.
+        </div>
+      </footer>
     </div>
   );
 }
-
