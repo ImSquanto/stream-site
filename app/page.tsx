@@ -101,9 +101,11 @@ export default function Page() {
         const url = new URL(API_URL);
         url.searchParams.set("month", selectedMonth);
         url.searchParams.set("ref", REF_CODE);
-        const res = await fetch("/api/leaderboard", {
-  headers: { Accept: "application/json" }
+        const res = await fetch(`/api/leaderboard?month=${selectedMonth}`, {
+  headers: { Accept: "application/json" },
+  cache: "no-store", // avoids stale cache while testing
 });
+
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         if (!cancelled) {
