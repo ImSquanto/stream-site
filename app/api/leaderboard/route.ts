@@ -1,98 +1,53 @@
-'use client';
+import { NextResponse } from 'next/server';
 
-import React, { useEffect, useState } from 'react';
+// Defaults to current month in ET, but lets you override with ?start_at=YYYY-MM-DD&end_at=YYYY-MM-DD
+function monthRangeET(d = new Date()) {
+  const fmt = (x: Date) =>
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(x); // YYYY-MM-DD
+  const first = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+  const next  = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1));
+  const last  = new Date(next.getTime() - 24 * 60 * 60 * 1000);
+  return { start: fmt(first), end: fmt(last) };
+}
 
-type Entry = {
-  uid?: string;
-  username: string;
-  totalWager: number;
-  rank?: number;
-};
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const { start, end } = monthRangeET();
+  const start_at = searchParams.get('start_at') || start;
+  const end_at   = searchParams.get('end_at')   || end;
 
-const formatUSD = (n: number) =>
-  new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0);
+  const apiKey = process.env.RAINBET_API_KEY;
+  if (!apiKey) return NextResponse.json({ error: 'Missing RAINBET_API_KEY' }, { status: 500 });
 
-export default function Page() {
-  const [entries, setEntries] = useState<Entry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string>('');
+  const url = new URL('https://services.rainbet.com/v1/external/affiliates');
+  url.searchParams.set('start_at', start_at);
+  url.searchParams.set('end_at',   end_at);
+  url.searchParams.set('key',      apiKey); // key goes in querystring
 
-  // 👇 If you want to lock to a specific range, uncomment and edit:
-  // const params = new URLSearchParams({ start_at: '2025-09-10', end_at: '2025-09-30' }).toString();
-  // const apiPath = `/api/leaderboard?${params}`;
+  const res = await fetch(url.toString(), { cache: 'no-store' });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    return NextResponse.json(
+      { error: 'Upstream error', status: res.status, detail: text.slice(0, 500) },
+      { status: res.status }
+    );
+  }
 
-  // Otherwise, call without params (your API route will default to the current month in ET)
-  const apiPath = `/api/leaderboard`;
+  const data = await res.json();
+  const players = Array.isArray(data?.affiliates) ? data.affiliates : [];
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      setErr('');
-      try {
-        const res = await fetch(apiPath, { cache: 'no-store' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-        // Your route returns { entries: [...] }
-        const list: Entry[] = Array.isArray(json?.entries) ? json.entries : [];
-        setEntries(list);
-      } catch (e: any) {
-        setErr(e?.message || 'Failed to load leaderboard');
-        setEntries([]);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [apiPath]);
+  const entries = players
+    .map((p: any) => ({
+      uid: p.id ?? p.uid ?? '',
+      username: p.username ?? 'Player',
+      totalWager: parseFloat(p.wagered_amount ?? 0),
+    }))
+    .sort((a, b) => b.totalWager - a.totalWager);
 
-  return (
-    <div className="min-h-screen bg-white text-zinc-900">
-      <header className="mx-auto max-w-5xl px-4 py-6">
-        <h1 className="text-2xl font-bold">Monthly Wager Leaderboard</h1>
-        {err ? (
-          <p className="mt-2 text-sm text-red-600">Error: {err}</p>
-        ) : (
-          <p className="mt-2 text-sm text-zinc-600">
-            {loading ? 'Loading…' : `Showing ${entries.length} players`}
-          </p>
-        )}
-      </header>
-
-      <main className="mx-auto max-w-5xl px-4 pb-16">
-        <div className="overflow-hidden rounded-2xl border shadow-sm">
-          <table className="w-full text-left">
-            <thead className="bg-zinc-50 text-xs uppercase tracking-wide text-zinc-600">
-              <tr>
-                <th className="px-4 py-3">Rank</th>
-                <th className="px-4 py-3">Player</th>
-                <th className="px-4 py-3">Total Wager</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((e, i) => (
-                <tr key={(e.uid || e.username) + i} className="border-t">
-                  <td className="px-4 py-3 font-semibold">{(e as any).rank ?? i + 1}</td>
-                  <td className="px-4 py-3">{e.username || 'Player'}</td>
-                  <td className="px-4 py-3 font-semibold">{formatUSD(Number(e.totalWager || 0))}</td>
-                </tr>
-              ))}
-              {!loading && entries.length === 0 && (
-                <tr>
-                  <td colSpan={3} className="px-4 py-10 text-center text-zinc-500">
-                    No players in this range yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* CTA */}
-        <div className="mt-8 rounded-2xl border p-5">
-          <p className="text-sm text-zinc-600">
-            Use code <span className="font-semibold">{process.env.NEXT_PUBLIC_STREAM_REF_CODE}</span> to join the race.
-          </p>
-        </div>
-      </main>
-    </div>
-  );
+  return NextResponse.json({ entries, range: { start_at, end_at } });
 }
