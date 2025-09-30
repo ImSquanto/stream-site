@@ -19,6 +19,10 @@
     "eslint-config-next": "latest",
     "tailwindcss": "latest",
     "postcss": "latest",
-    "autoprefixer": "latest"
+    "autoprefixer": "latest",
+    "@tailwindcss/postcss": "latest"
+  },
+  "engines": {
+    "node": "20.x"
   }
 }
