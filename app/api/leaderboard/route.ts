@@ -2,48 +2,40 @@ import { NextResponse } from 'next/server';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const month = searchParams.get('month'); // "2025-09" etc.
 
-  const refCode = process.env.NEXT_PUBLIC_STREAM_REF_CODE;
-  const apiKey  = process.env.RAINBET_API_KEY;
+  // You can control date range if Rainbet requires it
+  const start = searchParams.get('start_at') || new Date().toISOString().slice(0, 10);
+  const end = searchParams.get('end_at') || new Date(Date.now() + 30*24*60*60*1000).toISOString().slice(0, 10);
 
-  if (!apiKey)  return NextResponse.json({ error: 'Missing API key' }, { status: 500 });
-  if (!refCode) return NextResponse.json({ error: 'Missing referral code' }, { status: 500 });
+  const apiKey = process.env.RAINBET_API_KEY;
 
-  // 🔧 CHANGE THIS to the real leaderboard endpoint:
-  const upstreamUrl = new URL('https://YOUR-PROVIDER.com/leaderboard'); // e.g., https://api.rainbet.com/leaderboard
-  upstreamUrl.searchParams.set('code', refCode);
-  if (month) upstreamUrl.searchParams.set('month', month);
+  if (!apiKey) {
+    return NextResponse.json({ error: 'Missing RAINBET_API_KEY' }, { status: 500 });
+  }
 
-  const res = await fetch(upstreamUrl.toString(), {
-    headers: {
-      // Pick ONE that matches your docs:
-      'Authorization': `Bearer ${apiKey}`,  // common
-      // 'X-API-Key': apiKey,               // if docs say X-API-Key
-      // 'Authorization': `Token ${apiKey}`,// sometimes "Token"
-      'Accept': 'application/json',
-    },
-    // cache: 'no-store', // uncomment to force fresh data
-  });
+  // This is the Rainbet endpoint your bot was using
+  const url = new URL('https://services.rainbet.com/v1/external/affiliates');
+  url.searchParams.set('start_at', start);
+  url.searchParams.set('end_at', end);
+  url.searchParams.set('key', apiKey);
+
+  const res = await fetch(url.toString(), { cache: 'no-store' });
 
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     return NextResponse.json({ error: 'Upstream error', status: res.status, detail: text.slice(0, 500) }, { status: res.status });
   }
 
-  const raw = await res.json();
+  const data = await res.json();
 
-  // Normalize to { entries: [...] } for the frontend
-  const entries = Array.isArray(raw?.entries) ? raw.entries
-                : Array.isArray(raw?.data)    ? raw.data
-                : Array.isArray(raw)          ? raw
-                : [];
-  const normalized = entries.map((e: any) => ({
-    uid: e.uid ?? e.id ?? e.user_id ?? '',
-    username: e.username ?? e.name ?? 'Player',
-    totalWager: Number(e.totalWager ?? e.wager ?? 0),
-    month: e.month ?? e.monthKey ?? month ?? undefined,
-    avatar: e.avatar ?? undefined,
+  // Your bot showed affiliate wagers in data.affiliates
+  const players = Array.isArray(data?.affiliates) ? data.affiliates : [];
+  const sorted = players.sort((a: any, b: any) => parseFloat(b.wagered_amount) - parseFloat(a.wagered_amount));
+  const normalized = sorted.map((p: any, i: number) => ({
+    uid: p.id ?? p.uid ?? '',
+    username: p.username ?? 'Player',
+    totalWager: parseFloat(p.wagered_amount ?? 0),
+    rank: i + 1,
   }));
 
   return NextResponse.json({ entries: normalized });
