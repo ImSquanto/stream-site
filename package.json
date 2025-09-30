@@ -20,7 +20,9 @@
     "tailwindcss": "latest",
     "postcss": "latest",
     "autoprefixer": "latest",
-    "@tailwindcss/postcss": "latest"
+    "@tailwindcss/postcss": "latest",
+    "@types/react": "latest",
+    "@types/node": "latest"
   },
   "engines": {
     "node": "20.x"
