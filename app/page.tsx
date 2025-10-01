@@ -48,7 +48,7 @@ const Avatar = ({ name }: { name: string }) => {
   const seed = (name || '?').charCodeAt(0) % 6;
   const emojis = ['🎲', '🧧', '🪙', '🎰', '🃏', '💎'];
   return (
-    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-lg">
+    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-100 text-lg">
       <span>{emojis[seed]}</span>
     </div>
   );
@@ -56,12 +56,16 @@ const Avatar = ({ name }: { name: string }) => {
 
 const RankBadge = ({ rank }: { rank: number }) => {
   const styles: Record<number, string> = {
-    1: 'bg-amber-400 text-black',
-    2: 'bg-gray-300 text-black',
-    3: 'bg-orange-400 text-black',
+    1: 'bg-amber-400 text-black ring-2 ring-sky-200',
+    2: 'bg-zinc-300 text-black ring-2 ring-sky-200',
+    3: 'bg-orange-400 text-black ring-2 ring-sky-200',
   };
   return (
-    <span className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold ${styles[rank] ?? 'bg-gray-800 text-white'}`}>
+    <span
+      className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold ${
+        styles[rank] ?? 'bg-sky-700 text-white ring-2 ring-sky-200'
+      }`}
+    >
       {rank}
     </span>
   );
@@ -75,6 +79,7 @@ export default function Page() {
   const [selectedMonth, setSelectedMonth] = useState(monthKeyET());
   const [updatedAt, setUpdatedAt] = useState<string>('');
 
+  // last 6 months
   const monthOptions = useMemo(() => {
     const arr: { key: string; label: string }[] = [];
     const now = new Date();
@@ -87,6 +92,7 @@ export default function Page() {
     return arr;
   }, []);
 
+  // fetch for selected month
   useEffect(() => {
     const { start_at, end_at } = monthRangeFromKeyET(selectedMonth);
     const url = `/api/leaderboard?start_at=${start_at}&end_at=${end_at}`;
@@ -127,27 +133,29 @@ export default function Page() {
   }, [entries, q]);
 
   return (
-    <div className="min-h-screen bg-white text-zinc-900">
-      {/* Sticky Nav */}
-      <header className="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-white/70 bg-white/60 border-b">
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-white text-zinc-900">
+      {/* Top banner / nav */}
+      <header className="sticky top-0 z-40 border-b bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-2xl">⚡</span>
             <div>
-              <h1 className="text-xl md:text-2xl font-bold tracking-tight">Monthly Wager Race</h1>
-              <p className="text-xs md:text-sm text-zinc-600">
-                Play under code <span className="font-semibold">{REF_CODE}</span> to enter
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-sky-700">Monthly Wager Race</h1>
+              <p className="text-xs md:text-sm text-sky-700/70">
+                Play under code <span className="font-semibold text-sky-700">{REF_CODE}</span> to enter
               </p>
             </div>
           </div>
           <nav className="hidden md:flex items-center gap-4 text-sm">
-            <a href="#top10" className="hover:underline">Top 10</a>
-            <a href="#how" className="hover:underline">How to Join</a>
-            <a href="#prizes" className="hover:underline">Prizes & Payouts</a>
-            <a href="#fair" className="hover:underline">Fair Play</a>
-            <a href="#contact" className="hover:underline">Contact</a>
+            <a href="#top10" className="text-sky-800 hover:underline">Top 10</a>
+            <a href="#how" className="text-sky-800 hover:underline">How to Join</a>
+            <a href="#prizes" className="text-sky-800 hover:underline">Prizes & Payouts</a>
+            <a href="#fair" className="text-sky-800 hover:underline">Fair Play</a>
+            <a href="#contact" className="text-sky-800 hover:underline">Contact</a>
           </nav>
         </div>
+        {/* slim brand bar */}
+        <div className="h-1 w-full bg-gradient-to-r from-sky-500 via-sky-600 to-sky-700" />
       </header>
 
       {/* Controls */}
@@ -158,19 +166,19 @@ export default function Page() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search players…"
-              className="w-full rounded-xl border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-zinc-300"
+              className="w-full rounded-xl border border-sky-200/70 bg-white px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-300"
             />
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="rounded-xl border px-3 py-2 shadow-sm"
+              className="rounded-xl border border-sky-200/70 bg-white px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-300"
             >
               {monthOptions.map((m) => (
                 <option key={m.key} value={m.key}>{m.label}</option>
               ))}
             </select>
           </div>
-          <div className="flex items-center justify-end text-sm text-zinc-600">
+          <div className="flex items-center justify-end text-sm text-sky-800/70">
             {loading ? <span className="animate-pulse">Loading…</span> : (
               <span>Last updated {updatedAt || '—'} ET{err && <span className="ml-2 text-amber-600"> • {err}</span>}</span>
             )}
@@ -181,14 +189,14 @@ export default function Page() {
       {/* TOP 10 */}
       <main id="top10" className="mx-auto max-w-6xl px-4">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold tracking-tight">Top 10</h2>
-          <span className="text-sm text-zinc-600">Showing {filtered.top10.length} / {filtered.all.length} players</span>
+          <h2 className="text-lg font-semibold tracking-tight text-sky-800">Top 10</h2>
+          <span className="text-sm text-sky-800/70">Showing {filtered.top10.length} / {filtered.all.length} players</span>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-sky-100 bg-white shadow-sm">
           <table className="w-full text-left">
-            <thead className="bg-zinc-50">
-              <tr className="text-xs uppercase tracking-wide text-zinc-600">
+            <thead className="bg-sky-50/70">
+              <tr className="text-xs uppercase tracking-wide text-sky-800/80">
                 <th className="px-4 py-3">Rank</th>
                 <th className="px-4 py-3">Player</th>
                 <th className="px-4 py-3">Total Wager</th>
@@ -199,27 +207,32 @@ export default function Page() {
               {filtered.top10.map((row, idx) => {
                 const rank = idx + 1;
                 return (
-                  <tr key={(row.uid || row.username) + idx} className={`border-t ${rank <= 3 ? 'bg-amber-50/50' : 'bg-white'}`}>
+                  <tr
+                    key={(row.uid || row.username) + idx}
+                    className={`border-t border-sky-100 hover:bg-sky-50/40 transition-colors ${
+                      rank <= 3 ? 'bg-sky-50/40' : 'bg-white'
+                    }`}
+                  >
                     <td className="px-4 py-3"><RankBadge rank={rank} /></td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         {row.avatar ? (
-                          <img src={row.avatar} alt={row.username} className="h-9 w-9 rounded-full object-cover" />
+                          <img src={row.avatar} alt={row.username} className="h-9 w-9 rounded-full object-cover ring-2 ring-sky-100" />
                         ) : <Avatar name={row.username} />}
                         <div className="leading-tight">
-                          <div className="font-semibold">{row.username || 'Player'}</div>
-                          <div className="text-xs text-zinc-500 truncate max-w-[220px]">{row.uid || '—'}</div>
+                          <div className="font-semibold text-sky-900">{row.username || 'Player'}</div>
+                          {/* ID removed per your request */}
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 font-semibold">{fmtUSD(Number(row.totalWager || 0))}</td>
-                    <td className="px-4 py-3 text-zinc-700">{prizeForRank(rank)}</td>
+                    <td className="px-4 py-3 font-semibold text-sky-900">{fmtUSD(Number(row.totalWager || 0))}</td>
+                    <td className="px-4 py-3 text-sky-900">{prizeForRank(rank)}</td>
                   </tr>
                 );
               })}
               {!loading && filtered.top10.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-10 text-center text-zinc-500">No players this month yet.</td>
+                  <td colSpan={4} className="px-4 py-10 text-center text-sky-800/70">No players this month yet.</td>
                 </tr>
               )}
             </tbody>
@@ -228,12 +241,12 @@ export default function Page() {
 
         {/* Full list */}
         {filtered.all.length > 10 && (
-          <details className="mt-4 rounded-2xl border p-4 open:shadow-sm">
-            <summary className="cursor-pointer select-none font-medium">View full leaderboard ({filtered.all.length})</summary>
-            <div className="mt-3 overflow-hidden rounded-xl border">
+          <details className="mt-4 rounded-2xl border border-sky-100 bg-white p-4 open:shadow-sm">
+            <summary className="cursor-pointer select-none font-medium text-sky-900">View full leaderboard ({filtered.all.length})</summary>
+            <div className="mt-3 overflow-hidden rounded-xl border border-sky-100">
               <table className="w-full text-left">
-                <thead className="bg-zinc-50">
-                  <tr className="text-xs uppercase tracking-wide text-zinc-600">
+                <thead className="bg-sky-50/70">
+                  <tr className="text-xs uppercase tracking-wide text-sky-800/80">
                     <th className="px-3 py-2">Rank</th>
                     <th className="px-3 py-2">Player</th>
                     <th className="px-3 py-2">Total Wager</th>
@@ -241,7 +254,7 @@ export default function Page() {
                 </thead>
                 <tbody>
                   {filtered.all.map((row, i) => (
-                    <tr key={(row.uid || row.username) + 'all' + i} className="border-t">
+                    <tr key={(row.uid || row.username) + 'all' + i} className="border-t border-sky-100 hover:bg-sky-50/40">
                       <td className="px-3 py-2">{i + 1}</td>
                       <td className="px-3 py-2">{row.username || 'Player'}</td>
                       <td className="px-3 py-2 font-semibold">{fmtUSD(Number(row.totalWager || 0))}</td>
@@ -256,24 +269,24 @@ export default function Page() {
 
       {/* How to Join */}
       <section id="how" className="mx-auto max-w-6xl px-4 py-12">
-        <h2 className="text-lg font-semibold tracking-tight mb-4">How to Join</h2>
+        <h2 className="text-lg font-semibold tracking-tight text-sky-800 mb-4">How to Join</h2>
         <ol className="grid gap-3 md:grid-cols-3">
-          <li className="rounded-xl border p-4 shadow-sm">
+          <li className="rounded-xl border border-sky-100 bg-white p-4 shadow-sm">
             <div className="text-2xl mb-2">1️⃣</div>
-            <p>Create a casino account with code <span className="font-semibold">{REF_CODE}</span>.</p>
+            <p>Create a casino account with code <span className="font-semibold text-sky-800">{REF_CODE}</span>.</p>
           </li>
-          <li className="rounded-xl border p-4 shadow-sm">
+          <li className="rounded-xl border border-sky-100 bg-white p-4 shadow-sm">
             <div className="text-2xl mb-2">2️⃣</div>
             <p>Wager during the month (ET). Every $1 wagered counts toward the leaderboard.</p>
           </li>
-          <li className="rounded-xl border p-4 shadow-sm">
+          <li className="rounded-xl border border-sky-100 bg-white p-4 shadow-sm">
             <div className="text-2xl mb-2">3️⃣</div>
             <p>Finish top 10 to win prizes. Winners announced within 48 hours after month end.</p>
           </li>
         </ol>
         <a
           href="https://YOUR-CASINO-REF-LINK"
-          className="mt-4 inline-flex rounded-xl border px-4 py-2 text-sm font-medium shadow-sm hover:shadow transition"
+          className="mt-4 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-sky-600 to-sky-700 px-4 py-2 text-sm font-medium text-white shadow-sm hover:brightness-105 transition"
           target="_blank"
           rel="noreferrer"
         >
@@ -283,25 +296,27 @@ export default function Page() {
 
       {/* Prizes & Payouts */}
       <section id="prizes" className="mx-auto max-w-6xl px-4 py-12">
-        <h2 className="text-lg font-semibold tracking-tight mb-4">Prizes & Payouts</h2>
+        <h2 className="text-lg font-semibold tracking-tight text-sky-800 mb-4">Prizes & Payouts</h2>
         <div className="grid gap-3 md:grid-cols-4">
           {[1,2,3,4,5,6,7,8,9,10].map(r => (
-            <div key={r} className="rounded-xl border p-4 shadow-sm flex items-center justify-between">
+            <div key={r} className="rounded-xl border border-sky-100 bg-white p-4 shadow-sm flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <RankBadge rank={r} />
-                <span className="font-medium">Place {r}</span>
+                <span className="font-medium text-sky-900">Place {r}</span>
               </div>
-              <span className="text-zinc-700">{prizeForRank(r)}</span>
+              <span className="text-sky-900">{prizeForRank(r)}</span>
             </div>
           ))}
         </div>
-        <p className="text-sm text-zinc-600 mt-3">Payouts are typically via site bonus or direct payment depending on availability. Identification may be required.</p>
+        <p className="text-sm text-sky-800/70 mt-3">
+          Payouts are typically via site bonus or direct payment depending on availability. Identification may be required.
+        </p>
       </section>
 
       {/* Fair Play */}
       <section id="fair" className="mx-auto max-w-6xl px-4 py-12">
-        <h2 className="text-lg font-semibold tracking-tight mb-4">Fair Play Rules</h2>
-        <ul className="space-y-2 text-sm text-zinc-700">
+        <h2 className="text-lg font-semibold tracking-tight text-sky-800 mb-4">Fair Play Rules</h2>
+        <ul className="space-y-2 text-sm text-sky-900">
           <li>• One account per person. Duplicate or shared accounts may be disqualified.</li>
           <li>• Self-excluded, bonus-abuse, or fraudulent activity voids eligibility.</li>
           <li>• Wagers must be placed within the calendar month (Eastern Time).</li>
@@ -314,32 +329,34 @@ export default function Page() {
       <footer id="contact" className="mt-16 border-t">
         <div className="mx-auto max-w-6xl px-4 py-8 grid gap-6 md:grid-cols-4">
           <div className="md:col-span-2">
-            <div className="text-lg font-bold">© 2025 ImSquanto Gaming LLC — All rights reserved.</div>
-            <p className="text-sm text-zinc-600 mt-1">Community tournaments & monthly wager races. Must be of legal age in your jurisdiction.</p>
-            <p className="text-xs text-zinc-500 mt-2">
-              Gamble responsibly. If you or someone you know has a gambling problem and wants help, call the National Problem Gambling Helpline at 1-800-522-4700 or visit
-              <a className="underline ml-1" href="https://www.ncpgambling.org" target="_blank" rel="noreferrer">ncpgambling.org</a>.
+            <div className="text-lg font-bold text-sky-900">ImSquanto Gaming LLC</div>
+            <p className="text-sm text-sky-800/80 mt-1">
+              Community tournaments & monthly wager races. Must be of legal age in your jurisdiction.
+            </p>
+            <p className="text-xs text-sky-800/70 mt-2">
+              Gamble responsibly. If you or someone you know has a gambling problem and wants help, call the National Problem Gambling Helpline at 1-800-522-4700 or visit{' '}
+              <a className="underline" href="https://www.ncpgambling.org" target="_blank" rel="noreferrer">ncpgambling.org</a>.
             </p>
           </div>
           <div>
-            <div className="font-semibold mb-2">Links</div>
+            <div className="font-semibold text-sky-900 mb-2">Links</div>
             <ul className="space-y-1 text-sm">
-              <li><a className="hover:underline" href="/terms">Terms</a></li>
-              <li><a className="hover:underline" href="/privacy">Privacy</a></li>
-              <li><a className="hover:underline" href="/responsible-gaming">Responsible Gaming</a></li>
-              <li><a className="hover:underline" href="mailto:contact@squantogaming.com">Contact</a></li>
+              <li><a className="hover:underline text-sky-800" href="/terms">Terms</a></li>
+              <li><a className="hover:underline text-sky-800" href="/privacy">Privacy</a></li>
+              <li><a className="hover:underline text-sky-800" href="/responsible-gaming">Responsible Gaming</a></li>
+              <li><a className="hover:underline text-sky-800" href="mailto:contact@squantogaming.com">Contact</a></li>
             </ul>
           </div>
           <div>
-            <div className="font-semibold mb-2">Social</div>
+            <div className="font-semibold text-sky-900 mb-2">Social</div>
             <ul className="space-y-1 text-sm">
-              <li><a className="hover:underline" href="https://discord.gg/YOURCODE" target="_blank" rel="noreferrer">Discord</a></li>
-              <li><a className="hover:underline" href="https://twitch.tv/YOURHANDLE" target="_blank" rel="noreferrer">Twitch</a></li>
-              <li><a className="hover:underline" href="https://x.com/YOURHANDLE" target="_blank" rel="noreferrer">X / Twitter</a></li>
+              <li><a className="hover:underline text-sky-800" href="https://discord.gg/YOURCODE" target="_blank" rel="noreferrer">Discord</a></li>
+              <li><a className="hover:underline text-sky-800" href="https://twitch.tv/YOURHANDLE" target="_blank" rel="noreferrer">Twitch</a></li>
+              <li><a className="hover:underline text-sky-800" href="https://x.com/YOURHANDLE" target="_blank" rel="noreferrer">X / Twitter</a></li>
             </ul>
           </div>
         </div>
-        <div className="border-t py-4 text-center text-xs text-zinc-500">
+        <div className="border-t py-4 text-center text-xs text-sky-800/70">
           © 2025 ImSquanto Gaming LLC — All rights reserved.
         </div>
       </footer>
