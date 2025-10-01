@@ -1,64 +1,49 @@
 import { NextResponse } from 'next/server';
 
-// Make this route always dynamic + uncached on Vercel/Next
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// helper: convert "YYYY-MM-DD" to "YYYY-MM-DDT12:00:00-05:00" (12:00 PM EST)
-function toNoonEST(dateStr: string) {
-  // User explicitly wants EST noon (fixed -05:00), not daylight rules.
-  return `${dateStr}T12:00:00-05:00`;
-}
-
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
+
+  // Input from the frontend (YYYY-MM-DD)
   const startAt = searchParams.get('start_at') ?? '';
   const endAt   = searchParams.get('end_at') ?? '';
+  const debug   = searchParams.get('debug') === '1';
 
+  // Env you set in Vercel
   const refCode = process.env.NEXT_PUBLIC_STREAM_REF_CODE;
   const apiKey  = process.env.RAINBET_API_KEY;
-  const upstreamBase = process.env.LEADERBOARD_API_URL; // e.g. https://api.rainbet.com/leaderboard
+  const upstreamBase = process.env.LEADERBOARD_API_URL; // e.g. https://YOUR-API/leaderboard
 
-  if (!apiKey)  return NextResponse.json({ error: 'Missing API key' }, { status: 500 });
-  if (!refCode) return NextResponse.json({ error: 'Missing referral code' }, { status: 500 });
-  if (!upstreamBase) return NextResponse.json({ error: 'Missing LEADERBOARD_API_URL' }, { status: 500 });
-  if (!startAt || !endAt) return NextResponse.json({ error: 'Missing start_at or end_at' }, { status: 400 });
+  if (!apiKey)        return NextResponse.json({ error: 'Missing API key (RAINBET_API_KEY)' }, { status: 500 });
+  if (!refCode)       return NextResponse.json({ error: 'Missing referral code (NEXT_PUBLIC_STREAM_REF_CODE)' }, { status: 500 });
+  if (!upstreamBase)  return NextResponse.json({ error: 'Missing LEADERBOARD_API_URL' }, { status: 500 });
+  if (!startAt || !endAt)
+    return NextResponse.json({ error: 'Missing start_at or end_at' }, { status: 400 });
 
-  // Apply the 12:00 PM EST cut-off window
-  const startIso = toNoonEST(startAt); // inclusive
-  const endIso   = toNoonEST(endAt);   // inclusive upper bound at noon
-
-  // Build upstream URL
+  // Build upstream URL EXACTLY with date strings (no time-of-day)
   const upstreamUrl = new URL(upstreamBase);
-  // Common param names; adjust if your provider uses different ones
+  // ⚠️ If your provider uses different names, change here:
   upstreamUrl.searchParams.set('code', refCode);
-  upstreamUrl.searchParams.set('start_at', startIso);
-  upstreamUrl.searchParams.set('end_at', endIso);
-
-  // Optional: extra cache-bust
+  upstreamUrl.searchParams.set('start_at', startAt);
+  upstreamUrl.searchParams.set('end_at', endAt);
+  // Cache-bust upstream just in case
   upstreamUrl.searchParams.set('_', Date.now().toString());
 
-  // Call provider with no-store and auth header
-  const res = await fetch(upstreamUrl.toString(), {
+  const upstreamReq = await fetch(upstreamUrl.toString(), {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,  // change to 'X-API-Key' if required
+      'Authorization': `Bearer ${apiKey}`, // switch to 'X-API-Key' if your docs say so
       'Accept': 'application/json',
       'Cache-Control': 'no-store',
     },
     cache: 'no-store',
-    // next: { revalidate: 0 } // if you’re on an older Next, this also helps
   });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    return NextResponse.json(
-      { error: 'Upstream error', status: res.status, detail: text.slice(0, 600) },
-      { status: res.status, headers: { 'Cache-Control': 'no-store' } }
-    );
-  }
-
-  const raw = await res.json().catch(() => ({} as any));
+  const textBody = await upstreamReq.text().catch(() => '');
+  let raw: any = {};
+  try { raw = textBody ? JSON.parse(textBody) : {}; } catch { raw = {}; }
 
   // Normalize to { entries: [...] }
   const entries = Array.isArray(raw?.entries) ? raw.entries
@@ -73,8 +58,22 @@ export async function GET(req: Request) {
     avatar: e.avatar ?? undefined,
   }));
 
+  // Optional debug echo (shows what we called upstream with)
+  if (debug) {
+    return NextResponse.json({
+      debug: {
+        upstream: upstreamUrl.toString(),
+        status: upstreamReq.status,
+        rawPreview: typeof raw === 'object' ? Object.keys(raw) : String(textBody).slice(0, 200),
+        count: normalized.length,
+        range: { start_at: startAt, end_at: endAt },
+      },
+      entries: normalized,
+    }, { headers: { 'Cache-Control': 'no-store' }});
+  }
+
   return NextResponse.json(
-    { entries: normalized, range: { start_at: startIso, end_at: endIso } },
+    { entries: normalized, range: { start_at: startAt, end_at: endAt } },
     { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } }
   );
 }
