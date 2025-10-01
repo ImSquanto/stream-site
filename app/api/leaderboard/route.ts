@@ -1,53 +1,80 @@
 import { NextResponse } from 'next/server';
 
-// Defaults to current month in ET, but lets you override with ?start_at=YYYY-MM-DD&end_at=YYYY-MM-DD
-function monthRangeET(d = new Date()) {
-  const fmt = (x: Date) =>
-    new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'America/New_York',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(x); // YYYY-MM-DD
-  const first = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
-  const next  = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1));
-  const last  = new Date(next.getTime() - 24 * 60 * 60 * 1000);
-  return { start: fmt(first), end: fmt(last) };
+// Make this route always dynamic + uncached on Vercel/Next
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+// helper: convert "YYYY-MM-DD" to "YYYY-MM-DDT12:00:00-05:00" (12:00 PM EST)
+function toNoonEST(dateStr: string) {
+  // User explicitly wants EST noon (fixed -05:00), not daylight rules.
+  return `${dateStr}T12:00:00-05:00`;
 }
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const { start, end } = monthRangeET();
-  const start_at = searchParams.get('start_at') || start;
-  const end_at   = searchParams.get('end_at')   || end;
+  const startAt = searchParams.get('start_at') ?? '';
+  const endAt   = searchParams.get('end_at') ?? '';
 
-  const apiKey = process.env.RAINBET_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: 'Missing RAINBET_API_KEY' }, { status: 500 });
+  const refCode = process.env.NEXT_PUBLIC_STREAM_REF_CODE;
+  const apiKey  = process.env.RAINBET_API_KEY;
+  const upstreamBase = process.env.LEADERBOARD_API_URL; // e.g. https://api.rainbet.com/leaderboard
 
-  const url = new URL('https://services.rainbet.com/v1/external/affiliates');
-  url.searchParams.set('start_at', start_at);
-  url.searchParams.set('end_at',   end_at);
-  url.searchParams.set('key',      apiKey); // key goes in querystring
+  if (!apiKey)  return NextResponse.json({ error: 'Missing API key' }, { status: 500 });
+  if (!refCode) return NextResponse.json({ error: 'Missing referral code' }, { status: 500 });
+  if (!upstreamBase) return NextResponse.json({ error: 'Missing LEADERBOARD_API_URL' }, { status: 500 });
+  if (!startAt || !endAt) return NextResponse.json({ error: 'Missing start_at or end_at' }, { status: 400 });
 
-  const res = await fetch(url.toString(), { cache: 'no-store' });
+  // Apply the 12:00 PM EST cut-off window
+  const startIso = toNoonEST(startAt); // inclusive
+  const endIso   = toNoonEST(endAt);   // inclusive upper bound at noon
+
+  // Build upstream URL
+  const upstreamUrl = new URL(upstreamBase);
+  // Common param names; adjust if your provider uses different ones
+  upstreamUrl.searchParams.set('code', refCode);
+  upstreamUrl.searchParams.set('start_at', startIso);
+  upstreamUrl.searchParams.set('end_at', endIso);
+
+  // Optional: extra cache-bust
+  upstreamUrl.searchParams.set('_', Date.now().toString());
+
+  // Call provider with no-store and auth header
+  const res = await fetch(upstreamUrl.toString(), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,  // change to 'X-API-Key' if required
+      'Accept': 'application/json',
+      'Cache-Control': 'no-store',
+    },
+    cache: 'no-store',
+    // next: { revalidate: 0 } // if you’re on an older Next, this also helps
+  });
+
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     return NextResponse.json(
-      { error: 'Upstream error', status: res.status, detail: text.slice(0, 500) },
-      { status: res.status }
+      { error: 'Upstream error', status: res.status, detail: text.slice(0, 600) },
+      { status: res.status, headers: { 'Cache-Control': 'no-store' } }
     );
   }
 
-  const data = await res.json();
-  const players = Array.isArray(data?.affiliates) ? data.affiliates : [];
+  const raw = await res.json().catch(() => ({} as any));
 
-  const entries = players
-    .map((p: any) => ({
-      uid: p.id ?? p.uid ?? '',
-      username: p.username ?? 'Player',
-      totalWager: parseFloat(p.wagered_amount ?? 0),
-    }))
-    .sort((a, b) => b.totalWager - a.totalWager);
+  // Normalize to { entries: [...] }
+  const entries = Array.isArray(raw?.entries) ? raw.entries
+                : Array.isArray(raw?.data)    ? raw.data
+                : Array.isArray(raw)          ? raw
+                : [];
 
-  return NextResponse.json({ entries, range: { start_at, end_at } });
+  const normalized = entries.map((e: any) => ({
+    uid: e.uid ?? e.id ?? e.user_id ?? '',
+    username: e.username ?? e.name ?? 'Player',
+    totalWager: Number(e.totalWager ?? e.wager ?? 0),
+    avatar: e.avatar ?? undefined,
+  }));
+
+  return NextResponse.json(
+    { entries: normalized, range: { start_at: startIso, end_at: endIso } },
+    { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } }
+  );
 }
