@@ -1,79 +1,53 @@
 import { NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// Defaults to current month in ET, but lets you override with ?start_at=YYYY-MM-DD&end_at=YYYY-MM-DD
+function monthRangeET(d = new Date()) {
+  const fmt = (x: Date) =>
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(x); // YYYY-MM-DD
+  const first = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+  const next  = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1));
+  const last  = new Date(next.getTime() - 24 * 60 * 60 * 1000);
+  return { start: fmt(first), end: fmt(last) };
+}
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
+  const { start, end } = monthRangeET();
+  const start_at = searchParams.get('start_at') || start;
+  const end_at   = searchParams.get('end_at')   || end;
 
-  // Input from the frontend (YYYY-MM-DD)
-  const startAt = searchParams.get('start_at') ?? '';
-  const endAt   = searchParams.get('end_at') ?? '';
-  const debug   = searchParams.get('debug') === '1';
+  const apiKey = process.env.RAINBET_API_KEY;
+  if (!apiKey) return NextResponse.json({ error: 'Missing RAINBET_API_KEY' }, { status: 500 });
 
-  // Env you set in Vercel
-  const refCode = process.env.NEXT_PUBLIC_STREAM_REF_CODE;
-  const apiKey  = process.env.RAINBET_API_KEY;
-  const upstreamBase = process.env.LEADERBOARD_API_URL; // e.g. https://YOUR-API/leaderboard
+  const url = new URL('https://services.rainbet.com/v1/external/affiliates');
+  url.searchParams.set('start_at', start_at);
+  url.searchParams.set('end_at',   end_at);
+  url.searchParams.set('key',      apiKey); // key goes in querystring
 
-  if (!apiKey)        return NextResponse.json({ error: 'Missing API key (RAINBET_API_KEY)' }, { status: 500 });
-  if (!refCode)       return NextResponse.json({ error: 'Missing referral code (NEXT_PUBLIC_STREAM_REF_CODE)' }, { status: 500 });
-  if (!upstreamBase)  return NextResponse.json({ error: 'Missing LEADERBOARD_API_URL' }, { status: 500 });
-  if (!startAt || !endAt)
-    return NextResponse.json({ error: 'Missing start_at or end_at' }, { status: 400 });
-
-  // Build upstream URL EXACTLY with date strings (no time-of-day)
-  const upstreamUrl = new URL(upstreamBase);
-  // ⚠️ If your provider uses different names, change here:
-  upstreamUrl.searchParams.set('code', refCode);
-  upstreamUrl.searchParams.set('start_at', startAt);
-  upstreamUrl.searchParams.set('end_at', endAt);
-  // Cache-bust upstream just in case
-  upstreamUrl.searchParams.set('_', Date.now().toString());
-
-  const upstreamReq = await fetch(upstreamUrl.toString(), {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`, // switch to 'X-API-Key' if your docs say so
-      'Accept': 'application/json',
-      'Cache-Control': 'no-store',
-    },
-    cache: 'no-store',
-  });
-
-  const textBody = await upstreamReq.text().catch(() => '');
-  let raw: any = {};
-  try { raw = textBody ? JSON.parse(textBody) : {}; } catch { raw = {}; }
-
-  // Normalize to { entries: [...] }
-  const entries = Array.isArray(raw?.entries) ? raw.entries
-                : Array.isArray(raw?.data)    ? raw.data
-                : Array.isArray(raw)          ? raw
-                : [];
-
-  const normalized = entries.map((e: any) => ({
-    uid: e.uid ?? e.id ?? e.user_id ?? '',
-    username: e.username ?? e.name ?? 'Player',
-    totalWager: Number(e.totalWager ?? e.wager ?? 0),
-    avatar: e.avatar ?? undefined,
-  }));
-
-  // Optional debug echo (shows what we called upstream with)
-  if (debug) {
-    return NextResponse.json({
-      debug: {
-        upstream: upstreamUrl.toString(),
-        status: upstreamReq.status,
-        rawPreview: typeof raw === 'object' ? Object.keys(raw) : String(textBody).slice(0, 200),
-        count: normalized.length,
-        range: { start_at: startAt, end_at: endAt },
-      },
-      entries: normalized,
-    }, { headers: { 'Cache-Control': 'no-store' }});
+  const res = await fetch(url.toString(), { cache: 'no-store' });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    return NextResponse.json(
+      { error: 'Upstream error', status: res.status, detail: text.slice(0, 500) },
+      { status: res.status }
+    );
   }
 
-  return NextResponse.json(
-    { entries: normalized, range: { start_at: startAt, end_at: endAt } },
-    { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } }
-  );
+  const data = await res.json();
+  const players = Array.isArray(data?.affiliates) ? data.affiliates : [];
+
+  const entries = players
+    .map((p: any) => ({
+      uid: p.id ?? p.uid ?? '',
+      username: p.username ?? 'Player',
+      totalWager: parseFloat(p.wagered_amount ?? 0),
+    }))
+    .sort((a, b) => b.totalWager - a.totalWager);
+
+  return NextResponse.json({ entries, range: { start_at, end_at } });
 }
