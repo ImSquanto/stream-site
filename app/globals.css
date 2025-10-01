@@ -2,6 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body {
-  height: 100%;
+/* Brand tokens */
+:root {
+  --brand-bg: #0B1535;      /* deep Rainbet navy */
+  --brand-accent: #2EC4FF;  /* bright cyan */
+  --brand-accent2: #7DD3FC; /* light cyan */
+  --brand-text: #E9F2FF;    /* soft white */
+}
+
+/* Use the Sora font from layout */
+.font-sans {
+  font-family: var(--font-sora), ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Helvetica, Arial;
+}
+
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+::selection { background: rgba(46, 196, 255, 0.35); color: #06102B; }
+
+/* Subtle background glow */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20vmax;
+  background:
+    radial-gradient(45vmax 45vmax at 10% 10%, rgba(46,196,255,.08), transparent 40%),
+    radial-gradient(35vmax 35vmax at 90% 20%, rgba(125,211,252,.08), transparent 45%),
+    radial-gradient(40vmax 40vmax at 50% 90%, rgba(46,196,255,.06), transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Card glass look */
+.card {
+  @apply rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm;
+}
+
+/* Inputs/buttons */
+.input {
+  @apply rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-white placeholder-white/60 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2EC4FF]/60;
+}
+.btn {
+  @apply inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold shadow-sm transition;
+  background-image: linear-gradient(90deg, #2EC4FF, #0EA5E9 60%, #0369A1);
+  color: #06102B;
+}
+.btn:hover { filter: brightness(1.05); }
+
+/* Table */
+.table {
+  @apply w-full text-left;
+}
+.table thead {
+  @apply bg-white/10;
+}
+.table th {
+  @apply px-4 py-3 text-xs uppercase tracking-wide text-white/80;
+}
+.table td {
+  @apply px-4 py-3;
+}
+.table tr {
+  @apply border-t border-white/10;
+}
+.table tr:hover {
+  @apply bg-white/5;
 }
