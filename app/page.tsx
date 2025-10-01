@@ -314,7 +314,7 @@ export default function Page() {
       <footer id="contact" className="mt-16 border-t">
         <div className="mx-auto max-w-6xl px-4 py-8 grid gap-6 md:grid-cols-4">
           <div className="md:col-span-2">
-            <div className="text-lg font-bold">ImSquanto Gaming LLC</div>
+            <div className="text-lg font-bold">© 2025 ImSquanto Gaming LLC — All rights reserved.</div>
             <p className="text-sm text-zinc-600 mt-1">Community tournaments & monthly wager races. Must be of legal age in your jurisdiction.</p>
             <p className="text-xs text-zinc-500 mt-2">
               Gamble responsibly. If you or someone you know has a gambling problem and wants help, call the National Problem Gambling Helpline at 1-800-522-4700 or visit
