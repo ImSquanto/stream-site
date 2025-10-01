@@ -396,7 +396,8 @@ export default function Page() {
           </div>
         </div>
         <div className="border-t py-4 text-center text-xs text-zinc-500">
-          © 2025 ImSquanto Gaming LLC — All rights reserved.
+  © 2025 ImSquanto Gaming LLC — All rights reserved.
+</div>
         </div>
       </footer>
     </div>
