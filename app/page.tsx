@@ -98,36 +98,36 @@ export default function Page() {
 
   // fetch for selected month
   useEffect(() => {
-    const { start_at, end_at } = monthRangeFromKeyET(selectedMonth);
-    const url = `/api/leaderboard?start_at=${start_at}&end_at=${end_at}`;
+  // fetch exactly the month picked in the dropdown
+  const { start_at, end_at } = monthRangeFromKeyET(selectedMonth);
+  const url = `/api/leaderboard?start_at=${start_at}&end_at=${end_at}`;
 
-    let cancel = false;
-    (async () => {
-      setLoading(true);
-      setErr('');
-      try {
-        const res = await fetch(url, { cache: 'no-store' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-        const list: Entry[] = Array.isArray(json?.entries) ? json.entries : [];
-        if (!cancel) {
-          setEntries(list);
-          setUpdatedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-        }
-      } catch (e: any) {
-        if (!cancel) {
-          setErr(e?.message || 'Failed to load leaderboard');
-          setEntries([]);
-        }
-      } finally {
-        if (!cancel) setLoading(false);
+  let cancel = false;
+  (async () => {
+    setLoading(true);
+    setErr('');
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      const list: Entry[] = Array.isArray(json?.entries) ? json.entries : [];
+      if (!cancel) {
+        setEntries(list);
+        setUpdatedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
       }
-    })();
+    } catch (e: any) {
+      if (!cancel) {
+        setErr(e?.message || 'Failed to load leaderboard');
+        setEntries([]);
+      }
+    } finally {
+      if (!cancel) setLoading(false);
+    }
+  })();
 
-    return () => {
-      cancel = true;
-    };
-  }, [selectedMonth]);
+  return () => { cancel = true; };
+}, [selectedMonth]);
+
 
   const filtered = useMemo(() => {
     const rows = (entries || []).slice().sort((a, b) => Number(b.totalWager || 0) - Number(a.totalWager || 0));
