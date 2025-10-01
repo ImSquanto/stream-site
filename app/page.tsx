@@ -27,7 +27,12 @@ function monthRangeFromKeyET(ym: string) {
   const next = new Date(Date.UTC(y, (m ?? 1), 1));
   const last = new Date(next.getTime() - 24 * 60 * 60 * 1000);
   const fmt = (x: Date) =>
-    new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(x);
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(x); // YYYY-MM-DD
   return { start_at: fmt(first), end_at: fmt(last) };
 }
 
@@ -56,7 +61,11 @@ const RankBadge = ({ rank }: { rank: number }) => {
     3: 'bg-orange-400 text-black',
   };
   return (
-    <span className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold ${styles[rank] ?? 'bg-gray-800 text-white'}`}>
+    <span
+      className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold ${
+        styles[rank] ?? 'bg-gray-800 text-white'
+      }`}
+    >
       {rank}
     </span>
   );
@@ -70,6 +79,7 @@ export default function Page() {
   const [selectedMonth, setSelectedMonth] = useState(monthKeyET());
   const [updatedAt, setUpdatedAt] = useState<string>('');
 
+  // Last 6 months dropdown
   const monthOptions = useMemo(() => {
     const arr: { key: string; label: string }[] = [];
     const now = new Date();
@@ -82,6 +92,7 @@ export default function Page() {
     return arr;
   }, []);
 
+  // Fetch leaderboard for selected month
   useEffect(() => {
     const { start_at, end_at } = monthRangeFromKeyET(selectedMonth);
     const url = `/api/leaderboard?start_at=${start_at}&end_at=${end_at}`;
@@ -108,11 +119,17 @@ export default function Page() {
         if (!cancel) setLoading(false);
       }
     })();
-    return () => { cancel = true; };
+
+    return () => {
+      cancel = true;
+    };
   }, [selectedMonth]);
 
+  // Filter + Top 10
   const filtered = useMemo(() => {
-    const rows = (entries || []).slice().sort((a, b) => Number(b.totalWager || 0) - Number(a.totalWager || 0));
+    const rows = (entries || [])
+      .slice()
+      .sort((a, b) => Number(b.totalWager || 0) - Number(a.totalWager || 0));
     const qq = q.trim().toLowerCase();
     const searched = qq ? rows.filter(r => (r.username || '').toLowerCase().includes(qq)) : rows;
     return {
@@ -203,7 +220,10 @@ export default function Page() {
               {filtered.top10.map((row, idx) => {
                 const rank = idx + 1;
                 return (
-                  <tr key={(row.uid || row.username) + idx} className={`border-t ${rank <= 3 ? 'bg-amber-50/50' : 'bg-white'}`}>
+                  <tr
+                    key={(row.uid || row.username) + idx}
+                    className={`border-t ${rank <= 3 ? 'bg-amber-50/50' : 'bg-white'}`}
+                  >
                     <td className="px-4 py-3"><RankBadge rank={rank} /></td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
@@ -214,7 +234,9 @@ export default function Page() {
                         )}
                         <div className="leading-tight">
                           <div className="font-semibold">{row.username || 'Player'}</div>
-                          <div className="text-xs text-zinc-500 truncate max-w-[220px]">{row.uid || '—'}</div>
+                          <div className="text-xs text-zinc-500 truncate max-w-[220px]">
+                            {row.uid || '—'}
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -237,7 +259,9 @@ export default function Page() {
         {/* Full list */}
         {filtered.all.length > 10 && (
           <details className="mt-4 rounded-2xl border p-4 open:shadow-sm">
-            <summary className="cursor-pointer select-none font-medium">View full leaderboard ({filtered.all.length})</summary>
+            <summary className="cursor-pointer select-none font-medium">
+              View full leaderboard ({filtered.all.length})
+            </summary>
             <div className="mt-3 overflow-hidden rounded-xl border">
               <table className="w-full text-left">
                 <thead className="bg-zinc-50">
@@ -252,7 +276,9 @@ export default function Page() {
                     <tr key={(row.uid || row.username) + 'all' + i} className="border-t">
                       <td className="px-3 py-2">{i + 1}</td>
                       <td className="px-3 py-2">{row.username || 'Player'}</td>
-                      <td className="px-3 py-2 font-semibold">{fmtUSD(Number(row.totalWager || 0))}</td>
+                      <td className="px-3 py-2 font-semibold">
+                        {fmtUSD(Number(row.totalWager || 0))}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -268,7 +294,9 @@ export default function Page() {
         <ol className="grid gap-3 md:grid-cols-3">
           <li className="rounded-xl border p-4 shadow-sm">
             <div className="text-2xl mb-2">1️⃣</div>
-            <p>Create a casino account with code <span className="font-semibold">{REF_CODE}</span>.</p>
+            <p>
+              Create a casino account with code <span className="font-semibold">{REF_CODE}</span>.
+            </p>
           </li>
           <li className="rounded-xl border p-4 shadow-sm">
             <div className="text-2xl mb-2">2️⃣</div>
@@ -293,7 +321,7 @@ export default function Page() {
       <section id="prizes" className="mx-auto max-w-6xl px-4 py-12">
         <h2 className="text-lg font-semibold tracking-tight mb-4">Prizes & Payouts</h2>
         <div className="grid gap-3 md:grid-cols-4">
-          {[1,2,3,4,5,6,7,8,9,10].map(r => (
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(r => (
             <div key={r} className="rounded-xl border p-4 shadow-sm flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <RankBadge rank={r} />
@@ -304,7 +332,8 @@ export default function Page() {
           ))}
         </div>
         <p className="text-sm text-zinc-600 mt-3">
-          Payouts are typically via site bonus or direct payment depending on availability. Identification may be required.
+          Payouts are typically via site bonus or direct payment depending on availability. Identification may be
+          required.
         </p>
       </section>
 
@@ -324,12 +353,16 @@ export default function Page() {
       <footer id="contact" className="mt-16 border-t">
         <div className="mx-auto max-w-6xl px-4 py-8 grid gap-6 md:grid-cols-4">
           <div className="md:col-span-2">
-            <div className="text-lg font-bold">Squanto Gaming LLC</div>
+            <div className="text-lg font-bold">ImSquanto Gaming LLC</div>
             <p className="text-sm text-zinc-600 mt-1">
               Community tournaments & monthly wager races. Must be of legal age in your jurisdiction.
             </p>
             <p className="text-xs text-zinc-500 mt-2">
-              Gamble responsibly. If you or someone you know has a gambling problem and wants help, call the National Problem Gambling Helpline at 1-800-522-4700 or visit <a className="underline" href="https://www.ncpgambling.org" target="_blank" rel="noreferrer">ncpgambling.org</a>.
+              Gamble responsibly. If you or someone you know has a gambling problem and wants help, call the National
+              Problem Gambling Helpline at 1-800-522-4700 or visit{' '}
+              <a className="underline" href="https://www.ncpgambling.org" target="_blank" rel="noreferrer">
+                ncpgambling.org
+              </a>.
             </p>
           </div>
           <div>
@@ -344,15 +377,27 @@ export default function Page() {
           <div>
             <div className="font-semibold mb-2">Social</div>
             <ul className="space-y-1 text-sm">
-              <li><a className="hover:underline" href="https://discord.gg/YOURCODE" target="_blank" rel="noreferrer">Discord</a></li>
-              <li><a className="hover:underline" href="https://twitch.tv/YOURHANDLE" target="_blank" rel="noreferrer">Twitch</a></li>
-              <li><a className="hover:underline" href="https://x.com/YOURHANDLE" target="_blank" rel="noreferrer">X / Twitter</a></li>
+              <li>
+                <a className="hover:underline" href="https://discord.gg/YOURCODE" target="_blank" rel="noreferrer">
+                  Discord
+                </a>
+              </li>
+              <li>
+                <a className="hover:underline" href="https://twitch.tv/YOURHANDLE" target="_blank" rel="noreferrer">
+                  Twitch
+                </a>
+              </li>
+              <li>
+                <a className="hover:underline" href="https://x.com/YOURHANDLE" target="_blank" rel="noreferrer">
+                  X / Twitter
+                </a>
+              </li>
             </ul>
           </div>
         </div>
         <div className="border-t py-4 text-center text-xs text-zinc-500">
-  © 2025 ImSquanto Gaming LLC — All rights reserved.
-</div>
+          © 2025 ImSquanto Gaming LLC — All rights reserved.
+        </div>
       </footer>
     </div>
   );
