@@ -351,55 +351,42 @@ export default function Page() {
 
       {/* Footer */}
       <footer id="contact" className="mt-16 border-t">
-        <div className="mx-auto max-w-6xl px-4 py-8 grid gap-6 md:grid-cols-4">
-          <div className="md:col-span-2">
-            <div className="text-lg font-bold">ImSquanto Gaming LLC</div>
-            <p className="text-sm text-zinc-600 mt-1">
-              Community tournaments & monthly wager races. Must be of legal age in your jurisdiction.
-            </p>
-            <p className="text-xs text-zinc-500 mt-2">
-              Gamble responsibly. If you or someone you know has a gambling problem and wants help, call the National
-              Problem Gambling Helpline at 1-800-522-4700 or visit{' '}
-              <a className="underline" href="https://www.ncpgambling.org" target="_blank" rel="noreferrer">
-                ncpgambling.org
-              </a>.
-            </p>
-          </div>
-          <div>
-            <div className="font-semibold mb-2">Links</div>
-            <ul className="space-y-1 text-sm">
-              <li><a className="hover:underline" href="/terms">Terms</a></li>
-              <li><a className="hover:underline" href="/privacy">Privacy</a></li>
-              <li><a className="hover:underline" href="/responsible-gaming">Responsible Gaming</a></li>
-              <li><a className="hover:underline" href="mailto:contact@squantogaming.com">Contact</a></li>
-            </ul>
-          </div>
-          <div>
-            <div className="font-semibold mb-2">Social</div>
-            <ul className="space-y-1 text-sm">
-              <li>
-                <a className="hover:underline" href="https://discord.gg/YOURCODE" target="_blank" rel="noreferrer">
-                  Discord
-                </a>
-              </li>
-              <li>
-                <a className="hover:underline" href="https://twitch.tv/YOURHANDLE" target="_blank" rel="noreferrer">
-                  Twitch
-                </a>
-              </li>
-              <li>
-                <a className="hover:underline" href="https://x.com/YOURHANDLE" target="_blank" rel="noreferrer">
-                  X / Twitter
-                </a>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div className="border-t py-4 text-center text-xs text-zinc-500">
-  © 2025 ImSquanto Gaming LLC — All rights reserved.
-</div>
-        </div>
-      </footer>
+  <div className="mx-auto max-w-6xl px-4 py-8 grid gap-6 md:grid-cols-4">
+    <div className="md:col-span-2">
+      <div className="text-lg font-bold">ImSquanto Gaming LLC</div>
+      <p className="text-sm text-zinc-600 mt-1">
+        Community tournaments & monthly wager races. Must be of legal age in your jurisdiction.
+      </p>
+      <p className="text-xs text-zinc-500 mt-2">
+        Gamble responsibly. If you or someone you know has a gambling problem and wants help, call the National
+        Problem Gambling Helpline at 1-800-522-4700 or visit{' '}
+        <a className="underline" href="https://www.ncpgambling.org" target="_blank" rel="noreferrer">
+          ncpgambling.org
+        </a>.
+      </p>
     </div>
+    <div>
+      <div className="font-semibold mb-2">Links</div>
+      <ul className="space-y-1 text-sm">
+        <li><a className="hover:underline" href="/terms">Terms</a></li>
+        <li><a className="hover:underline" href="/privacy">Privacy</a></li>
+        <li><a className="hover:underline" href="/responsible-gaming">Responsible Gaming</a></li>
+        <li><a className="hover:underline" href="mailto:contact@squantogaming.com">Contact</a></li>
+      </ul>
+    </div>
+    <div>
+      <div className="font-semibold mb-2">Social</div>
+      <ul className="space-y-1 text-sm">
+        <li><a className="hover:underline" href="https://discord.gg/YOURCODE" target="_blank" rel="noreferrer">Discord</a></li>
+        <li><a className="hover:underline" href="https://twitch.tv/YOURHANDLE" target="_blank" rel="noreferrer">Twitch</a></li>
+        <li><a className="hover:underline" href="https://x.com/YOURHANDLE" target="_blank" rel="noreferrer">X / Twitter</a></li>
+      </ul>
+    </div>
+  </div>
+  <div className="border-t py-4 text-center text-xs text-zinc-500">
+    © 2025 ImSquanto Gaming LLC — All rights reserved.
+  </div>
+</footer>
+
   );
 }
