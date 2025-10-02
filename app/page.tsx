@@ -8,7 +8,7 @@ const REF_CODE = process.env.NEXT_PUBLIC_STREAM_REF_CODE || 'YOURCODE';
 const fmtUSD = (n: number) =>
   new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0);
 
-// Build YYYY-MM (ET)
+// Build YYYY-MM for "current month in ET" (for the dropdown default)
 function monthKeyET(d = new Date()) {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/New_York',
@@ -16,16 +16,16 @@ function monthKeyET(d = new Date()) {
     month: '2-digit',
   }).formatToParts(d);
   const y = parts.find(p => p.type === 'year')?.value ?? '2025';
-  const m = parts.find(p => p.type === 'month')?.value ?? '09';
+  const m = parts.find(p => p.type === 'month')?.value ?? '10';
   return `${y}-${m}`;
 }
 
-// First/last day (YYYY-MM-DD) for a given YYYY-MM (no TZ conversion)
+// First/last day (YYYY-MM-DD) for a given YYYY-MM (NO timezone conversion)
 function monthRangeFromKeyET(ym: string) {
   const [yStr, mStr] = ym.split('-');
   const y = Number(yStr);
   const m = Number(mStr); // 1..12
-  const daysInMonth = new Date(y, m, 0).getDate(); // local calc is fine
+  const daysInMonth = new Date(y, m, 0).getDate(); // local calc, safe once y/m fixed
   const mm = String(m).padStart(2, '0');
   const dd = String(daysInMonth).padStart(2, '0');
   return {
@@ -52,21 +52,21 @@ function Podium({ top3 }: { top3: Entry[] }) {
       <div className="rounded-2xl border border-[#CBD5E1] bg-gradient-to-br from-[#E5E7EB] to-white p-5 shadow-sm text-center">
         <div className="text-3xl">🥈</div>
         <div className="mt-2 text-xs uppercase tracking-wide text-[#0F172A]/70">Second</div>
-        <div className="mt-1 text-lg font-semibold text-[#0F172A]">{two?.username ?? '—'}</div>
+        <div className="mt-1 text-lg font-semibold text-[#0F172A] truncate">{two?.username ?? '—'}</div>
         <div className="mt-1 text-[#0F172A]/80">{fmtUSD(Number(two?.totalWager || 0))}</div>
       </div>
       {/* 1st */}
       <div className="rounded-2xl border-2 border-[#F59E0B] bg-gradient-to-br from-[#F59E0B] via-[#FBBF24] to-[#FEF3C7] p-6 shadow-md text-center md:-mt-4">
         <div className="text-4xl">👑</div>
         <div className="mt-2 text-xs uppercase tracking-wide text-black/70">Champion</div>
-        <div className="mt-1 text-xl font-extrabold text-[#111827]">{one?.username ?? '—'}</div>
+        <div className="mt-1 text-xl font-extrabold text-[#111827] truncate">{one?.username ?? '—'}</div>
         <div className="mt-1 font-semibold text-[#111827]">{fmtUSD(Number(one?.totalWager || 0))}</div>
       </div>
       {/* 3rd */}
       <div className="rounded-2xl border border-[#FDBA74] bg-gradient-to-br from-[#FDBA74] to-white p-5 shadow-sm text-center">
         <div className="text-3xl">🥉</div>
         <div className="mt-2 text-xs uppercase tracking-wide text-[#0F172A]/70">Third</div>
-        <div className="mt-1 text-lg font-semibold text-[#0F172A]">{three?.username ?? '—'}</div>
+        <div className="mt-1 text-lg font-semibold text-[#0F172A] truncate">{three?.username ?? '—'}</div>
         <div className="mt-1 text-[#0F172A]/80">{fmtUSD(Number(three?.totalWager || 0))}</div>
       </div>
     </div>
@@ -81,7 +81,7 @@ export default function Page() {
   const [selectedMonth, setSelectedMonth] = useState(monthKeyET());
   const [updatedAt, setUpdatedAt] = useState<string>('');
 
-  // last 6 months
+  // last 6 months for dropdown
   const monthOptions = useMemo(() => {
     const arr: { key: string; label: string }[] = [];
     const now = new Date();
@@ -94,69 +94,42 @@ export default function Page() {
     return arr;
   }, []);
 
-  // fetch for selected month
+  // FETCH — exact month selected (no shifting), cache-busted, clean braces
   useEffect(() => {
-  const { start_at, end_at } = monthRangeFromKeyET(selectedMonth);
-  const url = `/api/leaderboard?start_at=${start_at}&end_at=${end_at}&_=${Date.now()}`;
+    const { start_at, end_at } = monthRangeFromKeyET(selectedMonth);
+    const url = `/api/leaderboard?start_at=${start_at}&end_at=${end_at}&_=${Date.now()}`;
 
-  let cancel = false;
+    let cancel = false;
 
-  (async () => {
-    setLoading(true);
-    setErr('');
-    setEntries([]); // clear immediately so no mixed rows flash
-    try {
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      const list: Entry[] = Array.isArray(json?.entries) ? json.entries : [];
-      if (!cancel) {
-        setEntries(list);
-        setUpdatedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    (async () => {
+      setLoading(true);
+      setErr('');
+      setEntries([]); // clear immediately to avoid mixed rows
+      try {
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        const list: Entry[] = Array.isArray(json?.entries) ? json.entries : [];
+        if (!cancel) {
+          setEntries(list);
+          setUpdatedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        }
+      } catch (e: any) {
+        if (!cancel) {
+          setErr(e?.message || 'Failed to load leaderboard');
+          setEntries([]);
+        }
+      } finally {
+        if (!cancel) setLoading(false);
       }
-    } catch (e: any) {
-      if (!cancel) {
-        setErr(e?.message || 'Failed to load leaderboard');
-        setEntries([]);
-      }
-    } finally {
-      if (!cancel) setLoading(false);
-    }
-  })();
+    })();
 
-  return () => {
-    cancel = true;
-  };
-}, [selectedMonth]);
+    return () => {
+      cancel = true;
+    };
+  }, [selectedMonth]);
 
-  let cancel = false;
-  (async () => {
-    setLoading(true);
-    setErr('');
-    setEntries([]); // clear quickly so you never see mixed rows
-    try {
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      const list: Entry[] = Array.isArray(json?.entries) ? json.entries : [];
-      if (!cancel) {
-        setEntries(list);
-        setUpdatedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-      }
-    } catch (e: any) {
-      if (!cancel) {
-        setErr(e?.message || 'Failed to load leaderboard');
-        setEntries([]);
-      }
-    } finally {
-      if (!cancel) setLoading(false);
-    }
-  })();
-
-  return () => { cancel = true; };
-}, [selectedMonth]);
-
-
+  // derived data
   const filtered = useMemo(() => {
     const rows = (entries || []).slice().sort((a, b) => Number(b.totalWager || 0) - Number(a.totalWager || 0));
     const qq = q.trim().toLowerCase();
@@ -243,7 +216,6 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {/* rows 4-10 (top 3 shown on podium) */}
               {afterPodium.map((row, idx) => {
                 const rank = idx + 4;
                 return (
@@ -252,14 +224,7 @@ export default function Page() {
                     className="border-t border-[#BAE6FD] hover:bg-[#E0F2FE]/60 transition-colors"
                   >
                     <td className="px-4 py-3 font-semibold text-[#0F172A]">{rank}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        {/* avatar/ID removed as requested */}
-                        <div className="leading-tight">
-                          <div className="font-semibold text-[#0F172A]">{row.username || 'Player'}</div>
-                        </div>
-                      </div>
-                    </td>
+                    <td className="px-4 py-3 font-medium text-[#0F172A]">{row.username || 'Player'}</td>
                     <td className="px-4 py-3 font-semibold text-[#0F172A]">{fmtUSD(Number(row.totalWager || 0))}</td>
                     <td className="px-4 py-3 text-[#0F172A]">{prizeForRank(rank)}</td>
                   </tr>
