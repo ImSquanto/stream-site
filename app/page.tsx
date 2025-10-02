@@ -8,7 +8,7 @@ const REF_CODE = process.env.NEXT_PUBLIC_STREAM_REF_CODE || 'YOURCODE';
 const fmtUSD = (n: number) =>
   new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0);
 
-// Build YYYY-MM for "current month in ET" (for the dropdown default)
+// Build YYYY-MM for "current month in ET" (used for default dropdown value)
 function monthKeyET(d = new Date()) {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/New_York',
@@ -25,13 +25,45 @@ function monthRangeFromKeyET(ym: string) {
   const [yStr, mStr] = ym.split('-');
   const y = Number(yStr);
   const m = Number(mStr); // 1..12
-  const daysInMonth = new Date(y, m, 0).getDate(); // local calc, safe once y/m fixed
+  const daysInMonth = new Date(y, m, 0).getDate(); // local calc is fine once y/m are fixed
   const mm = String(m).padStart(2, '0');
   const dd = String(daysInMonth).padStart(2, '0');
   return {
     start_at: `${y}-${mm}-01`,
-    end_at:   `${y}-${mm}-${dd}`,
+    end_at: `${y}-${mm}-${dd}`,
   };
+}
+
+// --- Month helpers: pure string math, no timezone drift ---
+function parseYM(ym: string) {
+  const [y, m] = ym.split('-').map(Number);
+  return { y, m }; // m = 1..12
+}
+function ymString(y: number, m: number) {
+  return `${y}-${String(m).padStart(2, '0')}`;
+}
+function shiftYM(y: number, m: number, delta: number) {
+  let total = (y * 12) + (m - 1) + delta; // 0-based month index
+  const yy = Math.floor(total / 12);
+  const mm = (total % 12) + 1;
+  return { y: yy, m: mm };
+}
+// Build last N months starting from current ET month (keys via pure math)
+function monthListET(count = 6) {
+  const nowKey = monthKeyET(); // e.g. "2025-10"
+  const { y, m } = parseYM(nowKey);
+  const out: { key: string; label: string }[] = [];
+  for (let i = 0; i < count; i++) {
+    const { y: yy, m: mm } = shiftYM(y, m, -i);
+    const key = ymString(yy, mm);
+    // label is just for humans; key is what we actually use
+    const label = new Date(yy, mm - 1, 1).toLocaleDateString(undefined, {
+      month: 'long',
+      year: 'numeric',
+    });
+    out.push({ key, label });
+  }
+  return out;
 }
 
 const prizeForRank = (rank: number) => {
@@ -73,38 +105,6 @@ function Podium({ top3 }: { top3: Entry[] }) {
   );
 }
 
-// --- Month helpers: pure string math, no timezone drift ---
-function parseYM(ym: string) {
-  const [y, m] = ym.split('-').map(Number);
-  return { y, m }; // m = 1..12
-}
-function ymString(y: number, m: number) {
-  return `${y}-${String(m).padStart(2,'0')}`;
-}
-function shiftYM(y: number, m: number, delta: number) {
-  let total = (y * 12) + (m - 1) + delta; // 0-based month index
-  const yy = Math.floor(total / 12);
-  const mm = (total % 12) + 1;
-  return { y: yy, m: mm };
-}
-// Build last N months starting from current ET month (no Date arithmetic for keys)
-function monthListET(count = 6) {
-  const nowKey = monthKeyET();         // e.g. "2025-10" (from ET)
-  const { y, m } = parseYM(nowKey);
-  const out: { key: string; label: string }[] = [];
-  for (let i = 0; i < count; i++) {
-    const { y: yy, m: mm } = shiftYM(y, m, -i);
-    const key = ymString(yy, mm);
-    // label can use Date just for human-readable text; key stays exact
-    const label = new Date(yy, mm - 1, 1).toLocaleDateString(undefined, {
-      month: 'long',
-      year: 'numeric',
-    });
-    out.push({ key, label });
-  }
-  return out;
-}
-
 export default function Page() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,19 +114,9 @@ export default function Page() {
   const [updatedAt, setUpdatedAt] = useState<string>('');
 
   // last 6 months for dropdown (keys via pure math)
-const monthOptions = useMemo(() => monthListET(6), []);
-    const arr: { key: string; label: string }[] = [];
-    const now = new Date();
-    for (let i = 0; i < 6; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = monthKeyET(d);
-      const label = d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-      arr.push({ key, label });
-    }
-    return arr;
-  }, []);
+  const monthOptions = useMemo(() => monthListET(6), []);
 
-  // FETCH — exact month selected (no shifting), cache-busted, clean braces
+  // FETCH — exact month selected (no shifting), cache-busted
   useEffect(() => {
     const { start_at, end_at } = monthRangeFromKeyET(selectedMonth);
     const url = `/api/leaderboard?start_at=${start_at}&end_at=${end_at}&_=${Date.now()}`;
@@ -136,7 +126,7 @@ const monthOptions = useMemo(() => monthListET(6), []);
     (async () => {
       setLoading(true);
       setErr('');
-      setEntries([]); // clear immediately to avoid mixed rows
+      setEntries([]); // clear to avoid mixed rows
       try {
         const res = await fetch(url, { cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -248,6 +238,7 @@ const monthOptions = useMemo(() => monthListET(6), []);
               </tr>
             </thead>
             <tbody>
+              {/* rows 4-10 (top 3 are on the podium) */}
               {afterPodium.map((row, idx) => {
                 const rank = idx + 4;
                 return (
