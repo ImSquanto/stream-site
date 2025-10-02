@@ -20,12 +20,12 @@ function monthKeyET(d = new Date()) {
   return `${y}-${m}`;
 }
 
-// First/last day (YYYY-MM-DD) for a given YYYY-MM (no timezone conversion at all)
+// First/last day (YYYY-MM-DD) for a given YYYY-MM (no TZ conversion)
 function monthRangeFromKeyET(ym: string) {
   const [yStr, mStr] = ym.split('-');
   const y = Number(yStr);
   const m = Number(mStr); // 1..12
-  const daysInMonth = new Date(y, m, 0).getDate(); // local calc with raw y/m, NOT UTC
+  const daysInMonth = new Date(y, m, 0).getDate(); // local calc is fine
   const mm = String(m).padStart(2, '0');
   const dd = String(daysInMonth).padStart(2, '0');
   return {
@@ -95,10 +95,39 @@ export default function Page() {
   }, []);
 
   // fetch for selected month
+  useEffect(() => {
   const { start_at, end_at } = monthRangeFromKeyET(selectedMonth);
-const url = `/api/leaderboard?start_at=${start_at}&end_at=${end_at}&_=${Date.now()}`;
+  const url = `/api/leaderboard?start_at=${start_at}&end_at=${end_at}&_=${Date.now()}`;
 
-setEntries([]); // clear instantly so you never see mixed data
+  let cancel = false;
+
+  (async () => {
+    setLoading(true);
+    setErr('');
+    setEntries([]); // clear immediately so no mixed rows flash
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      const list: Entry[] = Array.isArray(json?.entries) ? json.entries : [];
+      if (!cancel) {
+        setEntries(list);
+        setUpdatedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      }
+    } catch (e: any) {
+      if (!cancel) {
+        setErr(e?.message || 'Failed to load leaderboard');
+        setEntries([]);
+      }
+    } finally {
+      if (!cancel) setLoading(false);
+    }
+  })();
+
+  return () => {
+    cancel = true;
+  };
+}, [selectedMonth]);
 
   let cancel = false;
   (async () => {
