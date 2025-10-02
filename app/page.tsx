@@ -20,12 +20,12 @@ function monthKeyET(d = new Date()) {
   return `${y}-${m}`;
 }
 
-// First/last day for a given YYYY-MM (pure strings, no TZ math)
+// First/last day (YYYY-MM-DD) for a given YYYY-MM (no timezone conversion at all)
 function monthRangeFromKeyET(ym: string) {
   const [yStr, mStr] = ym.split('-');
   const y = Number(yStr);
   const m = Number(mStr); // 1..12
-  const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const daysInMonth = new Date(y, m, 0).getDate(); // local calc with raw y/m, NOT UTC
   const mm = String(m).padStart(2, '0');
   const dd = String(daysInMonth).padStart(2, '0');
   return {
@@ -95,9 +95,10 @@ export default function Page() {
   }, []);
 
   // fetch for selected month
-  useEffect(() => {
   const { start_at, end_at } = monthRangeFromKeyET(selectedMonth);
-  const url = `/api/leaderboard?start_at=${start_at}&end_at=${end_at}&_=${Date.now()}`;
+const url = `/api/leaderboard?start_at=${start_at}&end_at=${end_at}&_=${Date.now()}`;
+
+setEntries([]); // clear instantly so you never see mixed data
 
   let cancel = false;
   (async () => {
