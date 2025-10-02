@@ -73,6 +73,38 @@ function Podium({ top3 }: { top3: Entry[] }) {
   );
 }
 
+// --- Month helpers: pure string math, no timezone drift ---
+function parseYM(ym: string) {
+  const [y, m] = ym.split('-').map(Number);
+  return { y, m }; // m = 1..12
+}
+function ymString(y: number, m: number) {
+  return `${y}-${String(m).padStart(2,'0')}`;
+}
+function shiftYM(y: number, m: number, delta: number) {
+  let total = (y * 12) + (m - 1) + delta; // 0-based month index
+  const yy = Math.floor(total / 12);
+  const mm = (total % 12) + 1;
+  return { y: yy, m: mm };
+}
+// Build last N months starting from current ET month (no Date arithmetic for keys)
+function monthListET(count = 6) {
+  const nowKey = monthKeyET();         // e.g. "2025-10" (from ET)
+  const { y, m } = parseYM(nowKey);
+  const out: { key: string; label: string }[] = [];
+  for (let i = 0; i < count; i++) {
+    const { y: yy, m: mm } = shiftYM(y, m, -i);
+    const key = ymString(yy, mm);
+    // label can use Date just for human-readable text; key stays exact
+    const label = new Date(yy, mm - 1, 1).toLocaleDateString(undefined, {
+      month: 'long',
+      year: 'numeric',
+    });
+    out.push({ key, label });
+  }
+  return out;
+}
+
 export default function Page() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,8 +113,8 @@ export default function Page() {
   const [selectedMonth, setSelectedMonth] = useState(monthKeyET());
   const [updatedAt, setUpdatedAt] = useState<string>('');
 
-  // last 6 months for dropdown
-  const monthOptions = useMemo(() => {
+  // last 6 months for dropdown (keys via pure math)
+const monthOptions = useMemo(() => monthListET(6), []);
     const arr: { key: string; label: string }[] = [];
     const now = new Date();
     for (let i = 0; i < 6; i++) {
