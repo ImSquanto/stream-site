@@ -163,7 +163,7 @@ export default function Page() {
   const afterPodium = filtered.top10.slice(3);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#E0F2FE] via-white to-white text-[#0F172A]">
+    <div className="min-h-screen bg-[#0284C7] text-white">
       {/* HERO / NAV */}
       <header className="bg-gradient-to-r from-[#0284C7] to-[#0369A1] text-white shadow">
         <div className="mx-auto max-w-6xl px-4 py-6 flex items-center justify-between">
