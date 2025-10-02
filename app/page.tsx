@@ -81,25 +81,25 @@ function Podium({ top3 }: { top3: Entry[] }) {
   return (
     <div className="grid gap-4 md:grid-cols-3">
       {/* 2nd */}
-      <div className="rounded-2xl border border-[#CBD5E1] bg-gradient-to-br from-[#E5E7EB] to-white p-5 shadow-sm text-center">
+      <div className="rounded-2xl border border-[#CBD5E1] bg-gradient-to-br from-[#E5E7EB] to-white p-5 shadow-sm text-center text-[#0F172A]">
         <div className="text-3xl">🥈</div>
         <div className="mt-2 text-xs uppercase tracking-wide text-[#0F172A]/70">Second</div>
-        <div className="mt-1 text-lg font-semibold text-[#0F172A] truncate">{two?.username ?? '—'}</div>
-        <div className="mt-1 text-[#0F172A]/80">{fmtUSD(Number(two?.totalWager || 0))}</div>
+        <div className="mt-1 text-lg font-semibold truncate">{two?.username ?? '—'}</div>
+        <div className="mt-1">{fmtUSD(Number(two?.totalWager || 0))}</div>
       </div>
       {/* 1st */}
-      <div className="rounded-2xl border-2 border-[#F59E0B] bg-gradient-to-br from-[#F59E0B] via-[#FBBF24] to-[#FEF3C7] p-6 shadow-md text-center md:-mt-4">
+      <div className="rounded-2xl border-2 border-[#F59E0B] bg-gradient-to-br from-[#F59E0B] via-[#FBBF24] to-[#FEF3C7] p-6 shadow-md text-center text-[#111827] md:-mt-4">
         <div className="text-4xl">👑</div>
         <div className="mt-2 text-xs uppercase tracking-wide text-black/70">Champion</div>
-        <div className="mt-1 text-xl font-extrabold text-[#111827] truncate">{one?.username ?? '—'}</div>
-        <div className="mt-1 font-semibold text-[#111827]">{fmtUSD(Number(one?.totalWager || 0))}</div>
+        <div className="mt-1 text-xl font-extrabold truncate">{one?.username ?? '—'}</div>
+        <div className="mt-1 font-semibold">{fmtUSD(Number(one?.totalWager || 0))}</div>
       </div>
       {/* 3rd */}
-      <div className="rounded-2xl border border-[#FDBA74] bg-gradient-to-br from-[#FDBA74] to-white p-5 shadow-sm text-center">
+      <div className="rounded-2xl border border-[#FDBA74] bg-gradient-to-br from-[#FDBA74] to-white p-5 shadow-sm text-center text-[#0F172A]">
         <div className="text-3xl">🥉</div>
         <div className="mt-2 text-xs uppercase tracking-wide text-[#0F172A]/70">Third</div>
-        <div className="mt-1 text-lg font-semibold text-[#0F172A] truncate">{three?.username ?? '—'}</div>
-        <div className="mt-1 text-[#0F172A]/80">{fmtUSD(Number(three?.totalWager || 0))}</div>
+        <div className="mt-1 text-lg font-semibold truncate">{three?.username ?? '—'}</div>
+        <div className="mt-1">{fmtUSD(Number(three?.totalWager || 0))}</div>
       </div>
     </div>
   );
@@ -163,7 +163,7 @@ export default function Page() {
   const afterPodium = filtered.top10.slice(3);
 
   return (
-    <div className="min-h-screen bg-[#111631] text-white">
+    <div className="min-h-screen bg-[#191f3b] text-white">
       {/* HERO / NAV */}
       <header className="bg-gradient-to-r from-[#0284C7] to-[#0369A1] text-white shadow">
         <div className="mx-auto max-w-6xl px-4 py-6 flex items-center justify-between">
@@ -195,21 +195,21 @@ export default function Page() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search players…"
-              className="w-full rounded-xl border border-[#93C5FD] bg-white px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#60A5FA]"
+              className="w-full rounded-xl border border-[#93C5FD] bg-white text-[#0F172A] px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#60A5FA]"
             />
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="rounded-xl border border-[#93C5FD] bg-white px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#60A5FA]"
+              className="rounded-xl border border-[#93C5FD] bg-white text-[#0F172A] px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#60A5FA]"
             >
               {monthOptions.map((m) => (
                 <option key={m.key} value={m.key}>{m.label}</option>
               ))}
             </select>
           </div>
-          <div className="flex items-center justify-end text-sm text-[#0F172A]/80">
+          <div className="flex items-center justify-end text-sm text-white/80">
             {loading ? <span className="animate-pulse">Loading…</span> : (
-              <span>Last updated {updatedAt || '—'} ET{err && <span className="ml-2 text-yellow-700"> • {err}</span>}</span>
+              <span>Last updated {updatedAt || '—'} ET{err && <span className="ml-2 text-yellow-300"> • {err}</span>}</span>
             )}
           </div>
         </div>
@@ -223,11 +223,11 @@ export default function Page() {
       {/* TOP 10 TABLE */}
       <main id="top10" className="mx-auto max-w-6xl px-4 mt-6">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold tracking-tight text-[#0F172A]">Top 10</h2>
-          <span className="text-sm text-[#0F172A]/70">Showing {filtered.top10.length} / {filtered.all.length} players</span>
+          <h2 className="text-lg font-semibold tracking-tight text-white">Top 10</h2>
+          <span className="text-sm text-white/80">Showing {filtered.top10.length} / {filtered.all.length} players</span>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-[#93C5FD] bg-white shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-[#93C5FD] bg-white text-[#0F172A] shadow-sm">
           <table className="w-full text-left">
             <thead className="bg-[#E0F2FE]">
               <tr className="text-xs uppercase tracking-wide text-[#0F172A]/80">
@@ -246,10 +246,10 @@ export default function Page() {
                     key={(row.uid || row.username) + idx}
                     className="border-t border-[#BAE6FD] hover:bg-[#E0F2FE]/60 transition-colors"
                   >
-                    <td className="px-4 py-3 font-semibold text-[#0F172A]">{rank}</td>
-                    <td className="px-4 py-3 font-medium text-[#0F172A]">{row.username || 'Player'}</td>
-                    <td className="px-4 py-3 font-semibold text-[#0F172A]">{fmtUSD(Number(row.totalWager || 0))}</td>
-                    <td className="px-4 py-3 text-[#0F172A]">{prizeForRank(rank)}</td>
+                    <td className="px-4 py-3 font-semibold">{rank}</td>
+                    <td className="px-4 py-3 font-medium">{row.username || 'Player'}</td>
+                    <td className="px-4 py-3 font-semibold">{fmtUSD(Number(row.totalWager || 0))}</td>
+                    <td className="px-4 py-3">{prizeForRank(rank)}</td>
                   </tr>
                 );
               })}
@@ -264,8 +264,8 @@ export default function Page() {
 
         {/* Full list */}
         {filtered.all.length > 10 && (
-          <details className="mt-4 rounded-2xl border border-[#93C5FD] bg-white p-4 open:shadow-sm">
-            <summary className="cursor-pointer select-none font-medium text-[#0F172A]">
+          <details className="mt-4 rounded-2xl border border-[#93C5FD] bg-white text-[#0F172A] p-4 open:shadow-sm">
+            <summary className="cursor-pointer select-none font-medium">
               View full leaderboard ({filtered.all.length})
             </summary>
             <div className="mt-3 overflow-hidden rounded-xl border border-[#93C5FD]">
@@ -294,17 +294,17 @@ export default function Page() {
 
       {/* How to Join */}
       <section id="how" className="mx-auto max-w-6xl px-4 py-12">
-        <h2 className="text-lg font-semibold tracking-tight text-[#0F172A] mb-4">How to Join</h2>
+        <h2 className="text-lg font-semibold tracking-tight text-white mb-4">How to Join</h2>
         <ol className="grid gap-4 md:grid-cols-3">
-          <li className="rounded-2xl border border-[#93C5FD] bg-white p-5 shadow-sm">
+          <li className="rounded-2xl border border-[#93C5FD] bg-white text-[#0F172A] p-5 shadow-sm">
             <div className="text-2xl mb-2">1️⃣</div>
             <p>Create a casino account with code <span className="font-semibold text-[#0F172A]">{REF_CODE}</span>.</p>
           </li>
-          <li className="rounded-2xl border border-[#93C5FD] bg-white p-5 shadow-sm">
+          <li className="rounded-2xl border border-[#93C5FD] bg-white text-[#0F172A] p-5 shadow-sm">
             <div className="text-2xl mb-2">2️⃣</div>
             <p>Wager during the month (ET). Every $1 wagered counts toward the leaderboard.</p>
           </li>
-          <li className="rounded-2xl border border-[#93C5FD] bg-white p-5 shadow-sm">
+          <li className="rounded-2xl border border-[#93C5FD] bg-white text-[#0F172A] p-5 shadow-sm">
             <div className="text-2xl mb-2">3️⃣</div>
             <p>Finish top 10 to win prizes. Winners announced within 48 hours after month end.</p>
           </li>
@@ -321,24 +321,24 @@ export default function Page() {
 
       {/* Prizes & Payouts */}
       <section id="prizes" className="mx-auto max-w-6xl px-4 py-12">
-        <h2 className="text-lg font-semibold tracking-tight text-[#0F172A] mb-4">Prizes & Payouts</h2>
+        <h2 className="text-lg font-semibold tracking-tight text-white mb-4">Prizes & Payouts</h2>
         <div className="grid gap-3 md:grid-cols-4">
           {[1,2,3,4,5,6,7,8,9,10].map(r => (
-            <div key={r} className="rounded-2xl border border-[#93C5FD] bg-white p-4 shadow-sm flex items-center justify-between">
-              <span className="font-medium text-[#0F172A]">Place {r}</span>
-              <span className="text-[#0F172A]">{prizeForRank(r)}</span>
+            <div key={r} className="rounded-2xl border border-[#93C5FD] bg-white text-[#0F172A] p-4 shadow-sm flex items-center justify-between">
+              <span className="font-medium">Place {r}</span>
+              <span>{prizeForRank(r)}</span>
             </div>
           ))}
         </div>
-        <p className="text-sm text-[#0F172A]/70 mt-3">
+        <p className="text-sm text-white/80 mt-3">
           Payouts are typically via site bonus or direct payment depending on availability. Identification may be required.
         </p>
       </section>
 
       {/* Fair Play */}
       <section id="fair" className="mx-auto max-w-6xl px-4 py-12">
-        <h2 className="text-lg font-semibold tracking-tight text-[#0F172A] mb-4">Fair Play Rules</h2>
-        <ul className="space-y-2 text-sm text-[#0F172A]">
+        <h2 className="text-lg font-semibold tracking-tight text-white mb-4">Fair Play Rules</h2>
+        <ul className="space-y-2 text-sm text-white">
           <li>• One account per person. Duplicate or shared accounts may be disqualified.</li>
           <li>• Self-excluded, bonus-abuse, or fraudulent activity voids eligibility.</li>
           <li>• Wagers must be placed within the calendar month (Eastern Time).</li>
@@ -348,37 +348,37 @@ export default function Page() {
       </section>
 
       {/* Footer */}
-      <footer id="contact" className="mt-16 border-t">
+      <footer id="contact" className="mt-16 border-t border-white/20">
         <div className="mx-auto max-w-6xl px-4 py-8 grid gap-6 md:grid-cols-4">
           <div className="md:col-span-2">
-            <div className="text-lg font-bold text-[#0F172A]">ImSquanto Gaming LLC</div>
-            <p className="text-sm text-[#0F172A]/80 mt-1">
+            <div className="text-lg font-bold text-white">ImSquanto Gaming LLC</div>
+            <p className="text-sm text-white/80 mt-1">
               Community tournaments & monthly wager races. Must be of legal age in your jurisdiction.
             </p>
-            <p className="text-xs text-[#0F172A]/70 mt-2">
+            <p className="text-xs text-white/70 mt-2">
               Gamble responsibly. If you or someone you know has a gambling problem and wants help, call the National Problem Gambling Helpline at 1-800-522-4700 or visit{' '}
               <a className="underline" href="https://www.ncpgambling.org" target="_blank" rel="noreferrer">ncpgambling.org</a>.
             </p>
           </div>
           <div>
-            <div className="font-semibold text-[#0F172A] mb-2">Links</div>
+            <div className="font-semibold text-white mb-2">Links</div>
             <ul className="space-y-1 text-sm">
-              <li><a className="hover:underline text-[#0F172A]" href="/terms">Terms</a></li>
-              <li><a className="hover:underline text-[#0F172A]" href="/privacy">Privacy</a></li>
-              <li><a className="hover:underline text-[#0F172A]" href="/responsible-gaming">Responsible Gaming</a></li>
-              <li><a className="hover:underline text-[#0F172A]" href="mailto:contact@squantogaming.com">Contact</a></li>
+              <li><a className="hover:underline text-white" href="/terms">Terms</a></li>
+              <li><a className="hover:underline text-white" href="/privacy">Privacy</a></li>
+              <li><a className="hover:underline text-white" href="/responsible-gaming">Responsible Gaming</a></li>
+              <li><a className="hover:underline text-white" href="mailto:contact@squantogaming.com">Contact</a></li>
             </ul>
           </div>
           <div>
-            <div className="font-semibold text-[#0F172A] mb-2">Social</div>
+            <div className="font-semibold text-white mb-2">Social</div>
             <ul className="space-y-1 text-sm">
-              <li><a className="hover:underline text-[#0F172A]" href="https://discord.gg/YOURCODE" target="_blank" rel="noreferrer">Discord</a></li>
-              <li><a className="hover:underline text-[#0F172A]" href="https://twitch.tv/YOURHANDLE" target="_blank" rel="noreferrer">Twitch</a></li>
-              <li><a className="hover:underline text-[#0F172A]" href="https://x.com/YOURHANDLE" target="_blank" rel="noreferrer">X / Twitter</a></li>
+              <li><a className="hover:underline text-white" href="https://discord.gg/YOURCODE" target="_blank" rel="noreferrer">Discord</a></li>
+              <li><a className="hover:underline text-white" href="https://twitch.tv/YOURHANDLE" target="_blank" rel="noreferrer">Twitch</a></li>
+              <li><a className="hover:underline text-white" href="https://x.com/YOURHANDLE" target="_blank" rel="noreferrer">X / Twitter</a></li>
             </ul>
           </div>
         </div>
-        <div className="border-t py-4 text-center text-xs text-[#0F172A]/70">
+        <div className="border-t border-white/10 py-4 text-center text-xs text-white/70">
           © 2025 ImSquanto Gaming LLC — All rights reserved.
         </div>
       </footer>
